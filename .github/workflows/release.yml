@@ -1,0 +1,28 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  npm-publish:
+    runs-on: ubuntu-latest
+    if: github.repository == 'magnoormeno-dot/netcafe-guard'
+    permissions:
+      contents: read
+      id-token: write # npm provenance
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+      - name: Tag must match package.json version
+        run: |
+          node -e "const v = require('./package.json').version; if (process.env.GITHUB_REF !== 'refs/tags/v' + v) { console.error('tag ' + process.env.GITHUB_REF + ' != package.json version ' + v); process.exit(1); }"
+      - name: Run tests
+        run: node --test
+      - name: Publish to npm with provenance
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
