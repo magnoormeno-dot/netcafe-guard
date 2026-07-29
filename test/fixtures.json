@@ -1,0 +1,14 @@
+{
+  "hostname": "CAFE-PC-EXAMPLE",
+  "platform": "win32",
+  "arch": "x64",
+  "autoAdminLogon": true,
+  "defaultPasswordStored": false,
+  "guestAccountActive": true,
+  "rdpEnabled": false,
+  "autorunDisabledAllDrives": false,
+  "firewallAllProfilesOn": true,
+  "defenderRealtimeEnabled": true,
+  "screenLockTimeoutSec": 1800,
+  "screenLockOnResume": false
+}
