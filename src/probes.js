@@ -1,6 +1,8 @@
 'use strict';
 
 const os = require('os');
+const fs = require('fs');
+const path = require('path');
 const { execFileSync } = require('child_process');
 
 /**
@@ -92,6 +94,136 @@ function probeWindows(facts) {
   }
   const screenSaverSecure = regQuery('HKCU\\Control Panel\\Desktop', 'ScreenSaverIsSecure');
   if (screenSaverSecure !== undefined) facts.screenLockOnResume = screenSaverSecure === '1';
+
+  probeAiSurface(facts);
+  probeSessionRestore(facts);
+}
+
+/* ---------- AI surface probes (Windows) ---------- */
+
+/**
+ * What does the AI on this endpoint see, keep, and hold?
+ *
+ * On a leased machine these features are multi-tenant leaks, not conveniences:
+ * a screen-recall snapshot of the previous tenant's banking session, or their
+ * password sitting in clipboard history, is readable by whoever sits down next.
+ * See docs/VISION.md.
+ */
+function probeAiSurface(facts) {
+  // Windows Recall / "AI data analysis" — periodic screenshots of everything.
+  // Policy value 1 means the capture feature is disabled.
+  const recallPolicy =
+    regQuery('HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI', 'DisableAIDataAnalysis') ||
+    regQuery('HKCU\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI', 'DisableAIDataAnalysis');
+  if (recallPolicy !== undefined) {
+    const n = parseInt(recallPolicy, 16) || parseInt(recallPolicy, 10);
+    facts.recallDisabled = n === 1;
+  }
+
+  // Windows Copilot — an assistant with system reach on a machine shared by
+  // strangers. Venues should decide deliberately, not inherit the default.
+  const copilotOff =
+    regQuery('HKCU\\Software\\Policies\\Microsoft\\Windows\\WindowsCopilot', 'TurnOffWindowsCopilot') ||
+    regQuery('HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot', 'TurnOffWindowsCopilot');
+  if (copilotOff !== undefined) {
+    const n = parseInt(copilotOff, 16) || parseInt(copilotOff, 10);
+    facts.copilotPolicySet = true;
+    facts.copilotDisabled = n === 1;
+  }
+
+  // Clipboard history: one tenant's copied password, readable by the next.
+  const clipHistory = regQuery(
+    'HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System',
+    'AllowClipboardHistory'
+  );
+  if (clipHistory !== undefined) {
+    const n = parseInt(clipHistory, 16) || parseInt(clipHistory, 10);
+    facts.clipboardHistoryDisabled = n === 0;
+  }
+
+  // Cross-device clipboard sync pushes local clipboard content off the machine.
+  const clipSync = regQuery(
+    'HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System',
+    'AllowCrossDeviceClipboard'
+  );
+  if (clipSync !== undefined) {
+    const n = parseInt(clipSync, 16) || parseInt(clipSync, 10);
+    facts.clipboardSyncDisabled = n === 0;
+  }
+
+  // Browser password managers on a leased seat persist credentials for the
+  // next tenant. Policy value 0 disables saving.
+  const chromePw = regQuery('HKLM\\SOFTWARE\\Policies\\Google\\Chrome', 'PasswordManagerEnabled');
+  const edgePw = regQuery('HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge', 'PasswordManagerEnabled');
+  const values = [chromePw, edgePw].filter((v) => v !== undefined);
+  if (values.length) {
+    facts.browserPasswordSavingDisabled = values.every((v) => {
+      const n = parseInt(v, 16) || parseInt(v, 10);
+      return n === 0;
+    });
+  }
+}
+
+/* ---------- Multi-tenant hygiene probes ---------- */
+
+/**
+ * Return the name of the first detected service from `names`, else undefined.
+ */
+function detectService(names) {
+  for (const name of names) {
+    const out = run('sc', ['query', name]);
+    if (out && /SERVICE_NAME|STATE/i.test(out)) return name;
+  }
+  return undefined;
+}
+
+/**
+ * Is anything guaranteeing this machine is clean for the next person?
+ * Session restore / write protection is the foundational control for leased
+ * computing: without it, nothing else on the machine can be trusted between
+ * tenants.
+ */
+function probeSessionRestore(facts) {
+  // Known write-filter / disk-restore agents. Café management suites vary by
+  // region — contributions welcome (see CONTRIBUTING.md).
+  const found = detectService(['DFServ', 'DeepFrz', 'uwfservicingsvc', 'EWF']);
+  facts.sessionRestoreAgent = found;
+  facts.sessionRestoreActive = found !== undefined;
+}
+
+/**
+ * Credential material left in a home directory becomes a free identity for the
+ * next tenant — and an AI agent key bills someone else.
+ *
+ * Existence checks ONLY. This probe never reads the contents of a credential
+ * file; a scanner that slurped secrets would itself be the leak.
+ */
+function probeLeftoverCredentials(facts) {
+  const home = os.homedir();
+  if (!home) return;
+
+  const candidates = [
+    '.ssh/id_rsa',
+    '.ssh/id_ed25519',
+    '.aws/credentials',
+    '.netrc',
+    '.claude/.credentials.json',
+    '.config/gh/hosts.yml',
+    '.config/openai',
+    'AppData/Roaming/Claude/claude_desktop_config.json'
+  ];
+
+  const found = [];
+  for (const rel of candidates) {
+    const full = path.join(home, ...rel.split('/'));
+    try {
+      if (fs.existsSync(full)) found.push('~/' + rel);
+    } catch (_err) {
+      /* unreadable path — treat as not found rather than crashing the scan */
+    }
+  }
+  facts.leftoverCredentialFiles = found;
+  facts.leftoverCredentialCount = found.length;
 }
 
 /* ---------- Cross-platform probes ---------- */
@@ -102,6 +234,7 @@ function probeCommon(facts) {
   facts.hostname = os.hostname();
   facts.osRelease = os.release();
   facts.uptimeHours = Math.round((os.uptime() / 3600) * 10) / 10;
+  probeLeftoverCredentials(facts);
 }
 
 /**
@@ -117,4 +250,12 @@ function gatherFacts(overrides = {}) {
   return { ...facts, ...overrides };
 }
 
-module.exports = { gatherFacts, run, regQuery };
+module.exports = {
+  gatherFacts,
+  run,
+  regQuery,
+  detectService,
+  probeAiSurface,
+  probeSessionRestore,
+  probeLeftoverCredentials
+};

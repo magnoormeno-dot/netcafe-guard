@@ -1,5 +1,75 @@
 [
   {
+    "id": "tenant-session-restore-active",
+    "title": "Session restore / write protection is active",
+    "severity": "critical",
+    "category": "multi-tenant",
+    "platforms": ["win32"],
+    "check": { "fact": "sessionRestoreActive", "operator": "isTrue" },
+    "remediation": "Install and enable a write filter or disk-restore agent (Windows Unified Write Filter, Deep Freeze, or your café management suite) so each tenant gets a clean machine. Without this, nothing else on a leased PC can be trusted between users — every other control can be undone by the previous tenant.",
+    "reference": "docs/VISION.md — multi-tenant hygiene"
+  },
+  {
+    "id": "tenant-no-leftover-credentials",
+    "title": "No leftover credential or AI agent key files in the home directory",
+    "severity": "critical",
+    "category": "multi-tenant",
+    "platforms": ["all"],
+    "check": { "fact": "leftoverCredentialCount", "operator": "lte", "value": 0 },
+    "remediation": "Remove SSH keys, cloud credentials, and AI agent/MCP config files from the shared profile, and wipe the profile between sessions. On a leased seat these are a free identity for the next tenant — an AI API key left behind bills someone else.",
+    "reference": "docs/VISION.md — the AI you invited in is the exposure"
+  },
+  {
+    "id": "ai-recall-disabled",
+    "title": "Screen recall / AI data analysis capture is disabled",
+    "severity": "critical",
+    "category": "ai-surface",
+    "platforms": ["win32"],
+    "check": { "fact": "recallDisabled", "operator": "isTrue" },
+    "remediation": "Set DisableAIDataAnalysis to 1 under HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI. Periodic screenshots of everything on screen are catastrophic on a shared PC: the next tenant can page back through the previous one's banking or login session.",
+    "reference": "Microsoft — Windows Recall policy (DisableAIDataAnalysis)"
+  },
+  {
+    "id": "ai-clipboard-history-disabled",
+    "title": "Clipboard history is disabled",
+    "severity": "high",
+    "category": "ai-surface",
+    "platforms": ["win32"],
+    "check": { "fact": "clipboardHistoryDisabled", "operator": "isTrue" },
+    "remediation": "Set AllowClipboardHistory to 0 under HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System. Clipboard history carries one tenant's copied password straight into the next tenant's session.",
+    "reference": "CIS / Microsoft — Allow Clipboard History policy"
+  },
+  {
+    "id": "ai-clipboard-sync-disabled",
+    "title": "Cross-device clipboard sync is disabled",
+    "severity": "medium",
+    "category": "ai-surface",
+    "platforms": ["win32"],
+    "check": { "fact": "clipboardSyncDisabled", "operator": "isTrue" },
+    "remediation": "Set AllowCrossDeviceClipboard to 0. On a leased machine this pushes whatever a stranger copied off the device and into an account you do not control.",
+    "reference": "Microsoft — Allow Cross Device Clipboard policy"
+  },
+  {
+    "id": "ai-assistant-policy-set",
+    "title": "An explicit policy exists for the built-in AI assistant",
+    "severity": "medium",
+    "category": "ai-surface",
+    "platforms": ["win32"],
+    "check": { "fact": "copilotPolicySet", "operator": "isTrue" },
+    "remediation": "Set TurnOffWindowsCopilot deliberately (either value) under the WindowsCopilot policy key. The finding here is the absence of a decision: an assistant with system reach on a machine shared by strangers should be allowed or denied on purpose, not inherited from the OS default.",
+    "reference": "docs/VISION.md — AI surface area"
+  },
+  {
+    "id": "tenant-browser-password-saving-off",
+    "title": "Browser password saving is disabled by policy",
+    "severity": "high",
+    "category": "multi-tenant",
+    "platforms": ["win32"],
+    "check": { "fact": "browserPasswordSavingDisabled", "operator": "isTrue" },
+    "remediation": "Set PasswordManagerEnabled to 0 in the Chrome and Edge policy keys. A saved password on a leased seat is handed to whoever sits down next.",
+    "reference": "Chrome/Edge enterprise policy — PasswordManagerEnabled"
+  },
+  {
     "id": "win-autologon-disabled",
     "title": "Automatic logon is disabled",
     "severity": "high",
