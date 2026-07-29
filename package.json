@@ -1,0 +1,51 @@
+{
+  "name": "netcafe-guard",
+  "version": "0.1.0",
+  "description": "Zero-dependency security baseline auditor for shared and public PCs — internet cafés, gaming venues, libraries, and kiosks.",
+  "bin": {
+    "netcafe-guard": "bin/netcafe-guard.js"
+  },
+  "main": "src/index.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test",
+    "scan": "node bin/netcafe-guard.js scan",
+    "lint": "node --check bin/netcafe-guard.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "rules/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "keywords": [
+    "security",
+    "hardening",
+    "baseline",
+    "audit",
+    "internet-cafe",
+    "cybercafe",
+    "gaming-venue",
+    "shared-pc",
+    "kiosk",
+    "windows",
+    "cis-benchmark",
+    "defensive-security"
+  ],
+  "author": "shine leek (@magnoormeno-dot)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/magnoormeno-dot/netcafe-guard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/magnoormeno-dot/netcafe-guard/issues"
+  },
+  "homepage": "https://github.com/magnoormeno-dot/netcafe-guard#readme",
+  "dependencies": {}
+}
