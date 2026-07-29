@@ -1,0 +1,102 @@
+[
+  {
+    "id": "win-autologon-disabled",
+    "title": "Automatic logon is disabled",
+    "severity": "high",
+    "category": "authentication",
+    "platforms": ["win32"],
+    "check": { "fact": "autoAdminLogon", "operator": "isFalse" },
+    "remediation": "Set HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\AutoAdminLogon to 0. Auto-logon hands every walk-up user an authenticated desktop.",
+    "reference": "CIS Microsoft Windows Benchmark — Interactive logon"
+  },
+  {
+    "id": "win-no-stored-password",
+    "title": "No cleartext logon password stored in the registry",
+    "severity": "critical",
+    "category": "authentication",
+    "platforms": ["win32"],
+    "check": { "fact": "defaultPasswordStored", "operator": "isFalse" },
+    "remediation": "Delete the DefaultPassword value under Winlogon. When auto-logon is configured this stores the account password in cleartext, readable by any local user.",
+    "reference": "MS KB324737 — Turn on automatic logon"
+  },
+  {
+    "id": "win-guest-disabled",
+    "title": "Built-in Guest account is disabled",
+    "severity": "medium",
+    "category": "accounts",
+    "platforms": ["win32"],
+    "check": { "fact": "guestAccountActive", "operator": "isFalse" },
+    "remediation": "Run: net user guest /active:no. The Guest account is a well-known anonymous access path.",
+    "reference": "CIS — Accounts: Guest account status"
+  },
+  {
+    "id": "win-rdp-disabled",
+    "title": "Inbound Remote Desktop is disabled",
+    "severity": "high",
+    "category": "remote-access",
+    "platforms": ["win32"],
+    "check": { "fact": "rdpEnabled", "operator": "isFalse" },
+    "remediation": "A public terminal should not accept inbound RDP. Set fDenyTSConnections to 1 unless remote management is genuinely required (then restrict by firewall).",
+    "reference": "CIS — Remote Desktop Services"
+  },
+  {
+    "id": "win-autorun-disabled",
+    "title": "Autorun/AutoPlay is disabled on all drive types",
+    "severity": "high",
+    "category": "removable-media",
+    "platforms": ["win32"],
+    "check": { "fact": "autorunDisabledAllDrives", "operator": "isTrue" },
+    "remediation": "Set NoDriveTypeAutoRun to 0xFF (255). USB autorun is a classic infection vector in shared-PC venues.",
+    "reference": "CIS — Autoplay Policies"
+  },
+  {
+    "id": "win-firewall-on",
+    "title": "Windows Firewall is enabled for all profiles",
+    "severity": "high",
+    "category": "network",
+    "platforms": ["win32"],
+    "check": { "fact": "firewallAllProfilesOn", "operator": "isTrue" },
+    "remediation": "Run: netsh advfirewall set allprofiles state on.",
+    "reference": "CIS — Windows Firewall with Advanced Security"
+  },
+  {
+    "id": "win-defender-realtime",
+    "title": "Microsoft Defender real-time protection is on",
+    "severity": "high",
+    "category": "malware",
+    "platforms": ["win32"],
+    "check": { "fact": "defenderRealtimeEnabled", "operator": "isTrue" },
+    "remediation": "Re-enable real-time protection, or confirm a supported third-party AV is active. Shared PCs see constant untrusted files and downloads.",
+    "reference": "CIS — Microsoft Defender Antivirus"
+  },
+  {
+    "id": "win-screenlock-enabled",
+    "title": "Screen auto-lock is enabled (idle timeout set)",
+    "severity": "medium",
+    "category": "session",
+    "platforms": ["win32"],
+    "check": { "fact": "screenLockTimeoutSec", "operator": "gte", "value": 60 },
+    "remediation": "Set a screen-saver idle timeout so abandoned sessions lock. A value of 0 means the session never locks on its own.",
+    "reference": "CIS — Interactive logon: Machine inactivity limit"
+  },
+  {
+    "id": "win-screenlock-max",
+    "title": "Screen auto-lock timeout is 15 minutes or less",
+    "severity": "low",
+    "category": "session",
+    "platforms": ["win32"],
+    "check": { "fact": "screenLockTimeoutSec", "operator": "lte", "value": 900 },
+    "remediation": "Reduce the idle timeout to 900 seconds or less so abandoned sessions lock promptly.",
+    "reference": "CIS — Interactive logon: Machine inactivity limit"
+  },
+  {
+    "id": "win-screenlock-secure",
+    "title": "Password is required when the screen resumes",
+    "severity": "medium",
+    "category": "session",
+    "platforms": ["win32"],
+    "check": { "fact": "screenLockOnResume", "operator": "isTrue" },
+    "remediation": "Enable 'On resume, display logon screen' so the lock actually requires re-authentication.",
+    "reference": "CIS — Screen saver: password protect"
+  }
+]
