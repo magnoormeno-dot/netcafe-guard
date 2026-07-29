@@ -6,6 +6,24 @@ All notable changes to this project are documented here. Format loosely follows
 
 ## [Unreleased]
 
+### Added
+- **Project vision** (`docs/VISION.md`): leased/multi-tenant AI-equipped endpoints
+  are the target; the internet café is the wedge because it is the most developed
+  form of leased computing that already exists. README now leads with this.
+- **Multi-tenant hygiene rules** — session restore / write protection detection,
+  leftover credential & AI agent key files, browser password saving policy.
+- **AI surface rules** — screen recall (`DisableAIDataAnalysis`) capture,
+  clipboard history, cross-device clipboard sync, explicit assistant policy.
+- Read-only probes for the above, including an existence-only credential probe
+  that never reads file contents.
+- 5 further tests (31 total) including the key case: a machine that passes every
+  classical check while failing every multi-tenant and AI-surface check.
+
+### Changed
+- Baseline is now ordered by priority: multi-tenant hygiene → AI surface →
+  classical baseline.
+- Package description and keywords reflect the AI-era shared-endpoint scope.
+
 ## [0.1.0]
 
 Initial release.

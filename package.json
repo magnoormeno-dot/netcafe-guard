@@ -1,7 +1,7 @@
 {
   "name": "netcafe-guard",
   "version": "0.1.0",
-  "description": "Zero-dependency security baseline auditor for shared and public PCs — internet cafés, gaming venues, libraries, and kiosks.",
+  "description": "Security baselines for leased, multi-tenant, AI-equipped endpoints — read-only hardening auditor for internet cafés, shared offices, and kiosks.",
   "bin": {
     "netcafe-guard": "bin/netcafe-guard.js"
   },
@@ -28,6 +28,10 @@
     "hardening",
     "baseline",
     "audit",
+    "ai-security",
+    "multi-tenant",
+    "leased-computing",
+    "windows-recall",
     "internet-cafe",
     "cybercafe",
     "gaming-venue",

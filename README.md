@@ -1,47 +1,77 @@
 # netcafe-guard
 
-> Security baseline auditor for shared and public PCs — internet cafés, gaming venues, libraries, and kiosks.
+> Security baselines for leased, multi-tenant, AI-equipped endpoints — starting
+> where that future already exists: the internet café.
 
 [![CI](https://github.com/magnoormeno-dot/netcafe-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/magnoormeno-dot/netcafe-guard/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/netcafe-guard.svg)](https://www.npmjs.com/package/netcafe-guard)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](package.json)
 
-A public PC is a hostile environment: dozens of strangers a day, USB sticks in every port, and one shared Windows image that nobody re-checks after the initial setup. `netcafe-guard` reads that machine's configuration against a hardening baseline and tells you, in plain language, what a walk-up attacker could abuse — auto-logon, a live Guest account, autorun on USB drives, an open RDP port, a firewall someone switched off "just to test something" six months ago.
+## Why this exists
 
-It is **read-only by design.** The tool never changes the machine it audits — it reports, you decide.
+Rising hardware cost — driven hard by AI — is pushing computing from *ownership*
+toward *leasing*. The internet café is the most developed form of leased
+computing that already exists: thousands of venues handing a machine to a
+stranger every few hours. Today it serves gamers. The moment leased computing has
+to serve **work**, it has to serve **AI**, because AI assistants and agents are
+becoming the interface to the work rather than an add-on to it.
+
+That makes one question decisive for any venue or enterprise running shared
+seats: **what does the AI on a machine a stranger used an hour ago actually
+expose?**
+
+Meanwhile the operators already running leased computing at scale have almost no
+security tooling — no baseline, no drift detection, no way to answer "is this
+machine safe for the next person."
+
+`netcafe-guard` closes that gap now, in order to be ready for what's coming. The
+full argument is in **[docs/VISION.md](docs/VISION.md)** — read that first if you
+want to know where this project is going.
+
+### Two kinds of "AI intrusion"
+
+Conflating these is why the problem gets hand-waved:
+
+- **AI as the attacker's instrument** — cheap, adaptive, automated attacks. This
+  is a reason to have a baseline at all.
+- **The AI you invited in is the exposure** — an assistant or agent legitimately
+  wants to read your files, watch your screen, hold API credentials, and execute
+  tools. On a leased machine every one of those is a multi-tenant leak. This one
+  is new, mostly unmeasured, and **checkable today**.
+
+The second is what this scanner measures.
+
+## What it does
+
+Reads a machine's configuration against a hardening baseline and reports, in
+plain language, what the next tenant — or a walk-up attacker — could abuse.
+
+**It is read-only by design.** It never changes the machine it audits. A scanner
+that reconfigured leased machines would itself become the multi-tenant risk.
 
 ```
   netcafe-guard  security baseline scan
   host: CAFE-PC-07  ·  platform: win32/x64
 
   Score: 0/100  (F)
-  1 pass · 9 fail · 0 unknown · 0 skipped
-
-  FAIL [critical] win-no-stored-password  No cleartext logon password stored in the registry
-        fix: Delete the DefaultPassword value under Winlogon...
-  FAIL [high] win-autologon-disabled     Automatic logon is disabled
-        fix: Set AutoAdminLogon to 0. Auto-logon hands every walk-up user an authenticated desktop.
-  FAIL [high] win-autorun-disabled       Autorun/AutoPlay is disabled on all drive types
-        fix: Set NoDriveTypeAutoRun to 0xFF. USB autorun is a classic infection vector.
+  FAIL [critical] tenant-session-restore-active     Session restore / write protection is active
+        fix: Without this, nothing else on a leased PC can be trusted between users...
+  FAIL [critical] ai-recall-disabled                Screen recall / AI data analysis capture is disabled
+        fix: The next tenant can page back through the previous one's banking session...
+  FAIL [critical] tenant-no-leftover-credentials    No leftover credential or AI agent key files
+        observed: ["~/.ssh/id_rsa","~/.aws/credentials"]
+  FAIL [high]     ai-clipboard-history-disabled     Clipboard history is disabled
   ...
 ```
-
-## Why
-
-CIS Benchmarks and enterprise EDR exist, but they are built for corporate fleets with a domain, a sysadmin, and a budget. The person running a 20-seat gaming café has none of those. `netcafe-guard` is a single command, no install ceremony, no agent, no account — pointed squarely at the handful of misconfigurations that actually get shared PCs owned.
 
 ## Install
 
 Requires Node.js 18+.
 
 ```bash
-# one-off, no install
-npx netcafe-guard scan
-
-# or install globally
-npm install -g netcafe-guard
-netcafe-guard scan
+npx netcafe-guard scan          # one-off, no install
+npm install -g netcafe-guard    # or install globally
 ```
 
 ## Usage
@@ -50,63 +80,77 @@ netcafe-guard scan
 netcafe-guard scan                    # audit this machine, show problems
 netcafe-guard scan --all              # show every check, including passes
 netcafe-guard scan --json > out.json  # machine-readable, for dashboards
-netcafe-guard scan --fail-under 80    # exit non-zero below a score — good for CI / scheduled runs
+netcafe-guard scan --fail-under 80    # exit non-zero below a score — for CI / scheduled runs
 netcafe-guard scan --rules ./cafe.json  # your own ruleset
 netcafe-guard list-rules              # what does the baseline check?
 ```
 
-Run it after imaging a new machine, after any config change, and on a schedule (Task Scheduler → `netcafe-guard scan --fail-under 80`) so drift gets caught.
+Run it after imaging a machine, after any config change, and on a schedule
+(Task Scheduler → `netcafe-guard scan --fail-under 80`) so drift gets caught.
 
 ### Scores
 
-The score starts at 100 and loses points for each failed check, weighted by severity (critical −25, high −15, medium −8, low −3). It is a **triage aid, not a compliance certificate** — a 100 means "no baseline failures the scanner could see," not "unhackable." Anything the scanner cannot read is reported as **unknown**, never assumed safe.
+Starts at 100, loses points per failed check weighted by severity (critical −25,
+high −15, medium −8, low −3). It is a **triage aid, not a compliance
+certificate.** Anything the scanner cannot read is reported as **unknown** —
+never assumed safe.
 
-## What it checks (baseline v0.1)
+## The baseline
 
-The starter baseline focuses on Windows, where almost all café/venue PCs live:
+Rules are grouped by the priority order argued in the vision doc:
 
-| Category | Checks |
-| --- | --- |
-| Authentication | auto-logon disabled · no cleartext password in registry |
-| Accounts | Guest account disabled |
-| Remote access | inbound RDP disabled |
-| Removable media | autorun/AutoPlay disabled on all drives |
-| Network | firewall on for all profiles |
-| Malware | Defender real-time protection on |
-| Session | screen auto-lock enabled, ≤15 min, secured on resume |
+| Priority | Category | Checks |
+| --- | --- | --- |
+| 1 | **Multi-tenant hygiene** | session restore / write protection · leftover credential & AI agent key files · browser password saving |
+| 2 | **AI surface area** | screen recall capture · clipboard history · cross-device clipboard sync · explicit assistant policy |
+| 3 | **Classical baseline** | auto-logon · cleartext registry password · Guest account · inbound RDP · autorun · firewall · Defender real-time · screen auto-lock |
 
-See [`docs/RULES.md`](docs/RULES.md) for the full list and the rule schema.
+Priority 3 is unglamorous and still failing in the field, which is why it ships
+and stays. Priority 1 comes first because without it the previous tenant can
+undo every other control on the list.
+
+Full list and schema: [`docs/RULES.md`](docs/RULES.md).
+
+## Scope discipline
+
+Being forward-looking is not a licence to ship speculation:
+
+- **Every rule must be checkable on a real machine now.** If a threat can only be
+  described, it lives in [docs/VISION.md](docs/VISION.md) as a thesis — not in
+  `rules/` as a check.
+- **Read-only, always.**
 
 ## Bring your own rules
 
-Rules are plain JSON — no code required. A rule maps a fact the scanner gathers to a secure expectation:
+Rules are plain JSON — no code required:
 
 ```json
 {
-  "id": "win-guest-disabled",
-  "title": "Built-in Guest account is disabled",
-  "severity": "medium",
-  "category": "accounts",
+  "id": "ai-recall-disabled",
+  "title": "Screen recall / AI data analysis capture is disabled",
+  "severity": "critical",
+  "category": "ai-surface",
   "platforms": ["win32"],
-  "check": { "fact": "guestAccountActive", "operator": "isFalse" },
-  "remediation": "Run: net user guest /active:no"
+  "check": { "fact": "recallDisabled", "operator": "isTrue" },
+  "remediation": "Set DisableAIDataAnalysis to 1 under ...WindowsAI"
 }
 ```
 
-Adding a check for your venue's own policy is a five-line JSON edit. That is deliberate — see [CONTRIBUTING.md](CONTRIBUTING.md). New probes (facts the scanner reads from the host) live in `src/probes.js` and are always read-only.
-
 ## Roadmap
 
+- [ ] More AI-surface rules: local agent tool configs, MCP server exposure on shared hosts
+- [ ] Café management suite detection (region-specific write-filter agents)
 - [ ] Linux and macOS baselines (shared library terminals, Mac kiosks)
-- [ ] A curated `--profile gaming-cafe` vs `--profile library` rule set
+- [ ] `--profile gaming-cafe` vs `--profile shared-office` rule sets
 - [ ] HTML report output for handing to a non-technical owner
-- [ ] Localised remediation text (zh / other languages common in café markets)
-
-Contributions in any of these directions are very welcome — especially real-world rules from people who actually run these venues.
+- [ ] Localised remediation text (zh first)
 
 ## Contributing
 
-New rules, new probes, translations, bug reports from real deployments — all welcome, and most rule contributions need zero JavaScript. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and the [good first issues](https://github.com/magnoormeno-dot/netcafe-guard/labels/good%20first%20issue).
+Especially wanted: **real-world rules from people who actually run these venues**,
+and detection for café management suites in your region. Most rule
+contributions need zero JavaScript. Start with [CONTRIBUTING.md](CONTRIBUTING.md)
+and the [good first issues](https://github.com/magnoormeno-dot/netcafe-guard/labels/good%20first%20issue).
 
 ## License
 

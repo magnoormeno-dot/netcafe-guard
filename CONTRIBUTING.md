@@ -3,6 +3,15 @@
 Thanks for wanting to help harden shared PCs. This project is deliberately
 easy to contribute to — **most rule contributions need no JavaScript at all.**
 
+Please skim [docs/VISION.md](docs/VISION.md) first. It explains why this project
+targets leased, multi-tenant, AI-equipped endpoints and why rules are prioritised
+multi-tenant hygiene → AI surface → classical baseline. Knowing that makes it much
+easier to judge whether an idea belongs in the baseline.
+
+**Especially wanted:** detection for café/venue management suites in your region
+(write-filter and disk-restore agents vary by market — we currently only detect a
+few), and real-world findings from machines you actually operate.
+
 ## Ways to contribute
 
 1. **Add a baseline rule** (easiest — pure JSON)
@@ -20,6 +29,10 @@ easy to contribute to — **most rule contributions need no JavaScript at all.**
 - **No network calls from probes.** Everything runs locally and offline.
 - **Cite a source** for security rules where you can (CIS Benchmark, vendor docs,
   a CVE). It keeps the baseline defensible.
+- **Every rule must be checkable on a real machine now.** Forward-looking is not
+  a licence to ship speculation: if a threat can only be described, it belongs in
+  `docs/VISION.md` as a thesis, not in `rules/` as a check.
+- **Never read credential contents.** Credential probes check existence only.
 
 ## Add a rule (no code)
 

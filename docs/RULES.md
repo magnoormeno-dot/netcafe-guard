@@ -48,14 +48,31 @@ Every evaluated rule ends in one of:
 
 ## Facts
 
-Facts are produced by probes in [`../src/probes.js`](../src/probes.js). Current
-Windows facts include:
+Facts are produced by probes in [`../src/probes.js`](../src/probes.js), grouped
+by the priority order in [VISION.md](VISION.md).
 
+**Multi-tenant hygiene** — is this machine clean for the next person?
+`sessionRestoreActive`, `sessionRestoreAgent`, `leftoverCredentialCount`,
+`leftoverCredentialFiles`, `browserPasswordSavingDisabled`
+
+**AI surface area** — what does the AI here see, keep, and hold?
+`recallDisabled`, `clipboardHistoryDisabled`, `clipboardSyncDisabled`,
+`copilotPolicySet`, `copilotDisabled`
+
+**Classical baseline (Windows)**
 `autoAdminLogon`, `defaultPasswordStored`, `guestAccountActive`, `rdpEnabled`,
 `autorunDisabledAllDrives`, `firewallAllProfilesOn`, `defenderRealtimeEnabled`,
 `screenLockTimeoutSec`, `screenLockOnResume`
 
-Cross-platform: `platform`, `arch`, `hostname`, `osRelease`, `uptimeHours`.
+**Cross-platform**
+`platform`, `arch`, `hostname`, `osRelease`, `uptimeHours`
+
+### A note on credential probes
+
+`leftoverCredentialFiles` contains tilde-prefixed *labels* only
+(`~/.ssh/id_rsa`). Probes check for **existence** and never read the contents of
+a credential file — a scanner that slurped secrets would itself be the leak.
+Keep any new credential probe to the same standard.
 
 Need a fact that doesn't exist yet? Add a probe (see
 [CONTRIBUTING.md](../CONTRIBUTING.md)). Probes are always read-only and return
