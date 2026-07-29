@@ -1,0 +1,27 @@
+{
+  "hostname": "CAFE-PC-07",
+  "platform": "win32",
+  "arch": "x64",
+  "osRelease": "10.0.26100",
+  "uptimeHours": 61.4,
+
+  "autoAdminLogon": false,
+  "defaultPasswordStored": false,
+  "guestAccountActive": false,
+  "rdpEnabled": false,
+  "autorunDisabledAllDrives": true,
+  "firewallAllProfilesOn": true,
+  "defenderRealtimeEnabled": true,
+  "screenLockTimeoutSec": 600,
+  "screenLockOnResume": true,
+
+  "sessionRestoreActive": false,
+  "leftoverCredentialCount": 2,
+  "leftoverCredentialFiles": ["~/.ssh/id_rsa", "~/.aws/credentials"],
+  "recallDisabled": false,
+  "clipboardHistoryDisabled": false,
+  "clipboardSyncDisabled": true,
+  "copilotPolicySet": true,
+  "copilotDisabled": true,
+  "browserPasswordSavingDisabled": true
+}

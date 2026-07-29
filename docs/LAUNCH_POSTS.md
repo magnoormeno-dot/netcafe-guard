@@ -14,14 +14,16 @@ GROWTH_PLAN Day 4 的全部材料。每一篇都写成**你的第一人称**,因
 
 ## 0. 发帖前必须清掉的硬伤(按顺序做)
 
-1. **npm 还没发布。** registry 现在对 `netcafe-guard` 返回 404,而 README 的
-   第一条安装命令是 `npx netcafe-guard scan`。发帖当天这是灭顶之灾:置顶评论
-   一定是 "the install command 404s"。跑 `npm publish`(包名当前无人占用),
-   或至少先把 README 安装行改成 `npx github:magnoormeno-dot/netcafe-guard scan`。
-2. **README 顶部还没有演示 GIF**(Day 2)。从帖子点进来的人 10 秒内决定去留,
-   录一段 asciinema / terminalizer 的 `scan` 输出放最上面。
-3. **还没有任何 good first issue**(Day 3)。帖子带来的潜在贡献者需要一扇门,
-   先开出 8–12 个再发帖。
+1. **npm 发布 —— 只差一个 token。** 发布流水线已就位
+   (`.github/workflows/release.yml`,tag 触发,带 npm provenance):
+   在 npmjs.com 建一个 granular access token(publish 权限)→ 仓库
+   Settings → Secrets → Actions 加 `NPM_TOKEN` → 推 `v0.1.0` tag
+   (或说一声,我来打 tag)。在此之前 README 已带实测可用的过渡命令
+   `npx github:magnoormeno-dot/netcafe-guard scan`,404 硬伤已排除。
+2. ~~README 顶部演示~~ **已完成**:`docs/assets/demo.svg`(自动播放的动画
+   演示,回放 `demo/cafe-pc-07.json` —— 经典基线 13 项全过、总分仍是 F)。
+3. ~~good first issue~~ **已完成**:12 个 issue 已开
+   (#1–#11 `good first issue` + #12 `help wanted`)。
 4. 仓库 description 目前是一串关键词(`security ai-security multi-tenant …`)。
    关键词应该放进 **topics**;description 换成一句人话:
    *"Read-only security baseline scanner for shared, AI-equipped PCs."*

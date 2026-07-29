@@ -8,6 +8,12 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](package.json)
 
+<p align="center">
+  <img src="docs/assets/demo.svg" width="755" alt="Animated demo: netcafe-guard scans a café PC — 13 classical checks pass, yet the machine scores 10/100 (F) because session restore is inactive, credentials were left behind, and Recall and clipboard history are on">
+</p>
+<p align="center"><sub>A classically-clean seat that is still an F where it matters. Replay it from a clone:<br>
+<code>node bin/netcafe-guard.js scan --facts demo/cafe-pc-07.json --platform win32</code></sub></p>
+
 ## Why this exists
 
 Rising hardware cost — driven hard by AI — is pushing computing from *ownership*
@@ -73,6 +79,9 @@ Requires Node.js 18+.
 npx netcafe-guard scan          # one-off, no install
 npm install -g netcafe-guard    # or install globally
 ```
+
+> First npm release is on its way. Until it lands, run straight from GitHub:
+> `npx github:magnoormeno-dot/netcafe-guard scan`
 
 ## Usage
 
