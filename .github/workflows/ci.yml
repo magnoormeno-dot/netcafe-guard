@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Syntax check CLI
+        run: node --check bin/netcafe-guard.js
+      - name: Run tests
+        run: node --test
+      - name: Smoke-test the CLI
+        run: |
+          node bin/netcafe-guard.js version
+          node bin/netcafe-guard.js list-rules
+          node bin/netcafe-guard.js scan --no-color
