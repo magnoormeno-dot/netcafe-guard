@@ -208,6 +208,8 @@ function probeLeftoverCredentials(facts) {
     '.aws/credentials',
     '.netrc',
     '.claude/.credentials.json',
+    '.claude.json',
+    '.codex/auth.json',
     '.config/gh/hosts.yml',
     '.config/openai',
     'AppData/Roaming/Claude/claude_desktop_config.json'
