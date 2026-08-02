@@ -70,7 +70,8 @@ by the priority order in [VISION.md](VISION.md).
 ### A note on credential probes
 
 `leftoverCredentialFiles` contains tilde-prefixed *labels* only
-(`~/.ssh/id_rsa`, `~/.claude.json`, `~/.codex/auth.json`). Probes check for
+(`~/.ssh/id_rsa`, `~/.aws/credentials`, `~/.kube/config`, `~/.docker/config.json`,
+`~/.claude.json`, `~/.codex/auth.json`). Probes check for
 **existence** and never read the contents of
 a credential file — a scanner that slurped secrets would itself be the leak.
 Keep any new credential probe to the same standard.
