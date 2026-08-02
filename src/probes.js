@@ -192,6 +192,30 @@ function probeSessionRestore(facts) {
 }
 
 /**
+ * Relative home-dir paths checked for leftover tenant credentials.
+ * Existence checks ONLY — never read file contents.
+ */
+const LEFTOVER_CREDENTIAL_CANDIDATES = [
+  '.ssh/id_rsa',
+  '.ssh/id_ed25519',
+  '.ssh/id_ecdsa',
+  '.aws/credentials',
+  '.azure/msal_token_cache.bin',
+  '.config/gcloud/credentials.db',
+  '.config/gcloud/legacy_credentials',
+  '.kube/config',
+  '.docker/config.json',
+  '.terraform.d/credentials.tfrc.json',
+  '.netrc',
+  '.claude/.credentials.json',
+  '.claude.json',
+  '.codex/auth.json',
+  '.config/gh/hosts.yml',
+  '.config/openai',
+  'AppData/Roaming/Claude/claude_desktop_config.json'
+];
+
+/**
  * Credential material left in a home directory becomes a free identity for the
  * next tenant — and an AI agent key bills someone else.
  *
@@ -202,21 +226,8 @@ function probeLeftoverCredentials(facts) {
   const home = os.homedir();
   if (!home) return;
 
-  const candidates = [
-    '.ssh/id_rsa',
-    '.ssh/id_ed25519',
-    '.aws/credentials',
-    '.netrc',
-    '.claude/.credentials.json',
-    '.claude.json',
-    '.codex/auth.json',
-    '.config/gh/hosts.yml',
-    '.config/openai',
-    'AppData/Roaming/Claude/claude_desktop_config.json'
-  ];
-
   const found = [];
-  for (const rel of candidates) {
+  for (const rel of LEFTOVER_CREDENTIAL_CANDIDATES) {
     const full = path.join(home, ...rel.split('/'));
     try {
       if (fs.existsSync(full)) found.push('~/' + rel);
@@ -259,5 +270,6 @@ module.exports = {
   detectService,
   probeAiSurface,
   probeSessionRestore,
-  probeLeftoverCredentials
+  probeLeftoverCredentials,
+  LEFTOVER_CREDENTIAL_CANDIDATES
 };

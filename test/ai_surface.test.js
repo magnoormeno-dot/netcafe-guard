@@ -3,7 +3,10 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { scan } = require('../src');
-const { probeLeftoverCredentials } = require('../src/probes');
+const {
+  probeLeftoverCredentials,
+  LEFTOVER_CREDENTIAL_CANDIDATES
+} = require('../src/probes');
 
 /**
  * A leased seat that is dangerous specifically because of its AI surface:
@@ -88,6 +91,24 @@ test('the leftover-credential probe is cross-platform and never reads file conte
   // Only tilde-prefixed labels are exposed — never absolute paths or contents.
   for (const label of facts.leftoverCredentialFiles) {
     assert.match(label, /^~\//);
+  }
+});
+
+test('leftover-credential watchlist covers cloud and dev CLI credential paths', () => {
+  const expected = [
+    '.ssh/id_ecdsa',
+    '.azure/msal_token_cache.bin',
+    '.config/gcloud/credentials.db',
+    '.config/gcloud/legacy_credentials',
+    '.kube/config',
+    '.docker/config.json',
+    '.terraform.d/credentials.tfrc.json'
+  ];
+  for (const rel of expected) {
+    assert.ok(
+      LEFTOVER_CREDENTIAL_CANDIDATES.includes(rel),
+      `expected watchlist to include ${rel}`
+    );
   }
 });
 
