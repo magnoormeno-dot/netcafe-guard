@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 jobs:
   npm-publish:
@@ -18,6 +19,7 @@ jobs:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
       - name: Tag must match package.json version
+        if: github.event_name == 'push'
         run: |
           node -e "const v = require('./package.json').version; if (process.env.GITHUB_REF !== 'refs/tags/v' + v) { console.error('tag ' + process.env.GITHUB_REF + ' != package.json version ' + v); process.exit(1); }"
       - name: Run tests
