@@ -80,9 +80,6 @@ npx netcafe-guard scan          # one-off, no install
 npm install -g netcafe-guard    # or install globally
 ```
 
-> First npm release is on its way. Until it lands, run straight from GitHub:
-> `npx github:magnoormeno-dot/netcafe-guard scan`
-
 ## Usage
 
 ```bash
