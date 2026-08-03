@@ -3,8 +3,6 @@
 > Security baselines for leased, multi-tenant, AI-equipped endpoints — starting
 > where that future already exists: the internet café.
 
-**English** | [中文](README.zh.md)
-
 [![CI](https://github.com/magnoormeno-dot/netcafe-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/magnoormeno-dot/netcafe-guard/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/netcafe-guard.svg)](https://www.npmjs.com/package/netcafe-guard)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
