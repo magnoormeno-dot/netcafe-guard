@@ -14,12 +14,9 @@ GROWTH_PLAN Day 4 的全部材料。每一篇都写成**你的第一人称**,因
 
 ## 0. 发帖前必须清掉的硬伤(按顺序做)
 
-1. **npm 发布 —— 只差一个 token。** 发布流水线已就位
-   (`.github/workflows/release.yml`,tag 触发,带 npm provenance):
-   在 npmjs.com 建一个 granular access token(publish 权限)→ 仓库
-   Settings → Secrets → Actions 加 `NPM_TOKEN` → 推 `v0.1.0` tag
-   (或说一声,我来打 tag)。在此之前 README 已带实测可用的过渡命令
-   `npx github:magnoormeno-dot/netcafe-guard scan`,404 硬伤已排除。
+1. ~~npm 发布~~ **已完成**:`netcafe-guard@0.1.0` 已上线
+   (带 provenance),`npx netcafe-guard scan` 实测可用——帖子里的
+   安装命令全部为真。
 2. ~~README 顶部演示~~ **已完成**:`docs/assets/demo.svg`(自动播放的动画
    演示,回放 `demo/cafe-pc-07.json` —— 经典基线 13 项全过、总分仍是 F)。
 3. ~~good first issue~~ **已完成**:12 个 issue 已开
