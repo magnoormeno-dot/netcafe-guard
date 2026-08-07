@@ -60,15 +60,16 @@ that reconfigured leased machines would itself become the multi-tenant risk.
   netcafe-guard  security baseline scan
   host: CAFE-PC-07  ·  platform: win32/x64
 
-  Score: 0/100  (F)
+  Score: 10/100  (F)
+  13 pass · 4 fail · 0 unknown · 0 skipped
+
   FAIL [critical] tenant-session-restore-active     Session restore / write protection is active
         fix: Without this, nothing else on a leased PC can be trusted between users...
-  FAIL [critical] ai-recall-disabled                Screen recall / AI data analysis capture is disabled
-        fix: The next tenant can page back through the previous one's banking session...
   FAIL [critical] tenant-no-leftover-credentials    No leftover credential or AI agent key files
         observed: ["~/.ssh/id_rsa","~/.aws/credentials"]
+  FAIL [critical] ai-recall-disabled                Screen recall / AI data analysis capture is disabled
+        fix: The next tenant can page back through the previous one's banking session...
   FAIL [high]     ai-clipboard-history-disabled     Clipboard history is disabled
-  ...
 ```
 
 ## Install
