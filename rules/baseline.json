@@ -30,6 +30,16 @@
     "reference": "Microsoft — Windows Recall policy (DisableAIDataAnalysis)"
   },
   {
+    "id": "capture-gamedvr-disabled",
+    "title": "Game DVR background recording is disabled",
+    "severity": "high",
+    "category": "ai-surface",
+    "platforms": ["win32"],
+    "check": { "fact": "gameDvrDisabled", "operator": "isTrue" },
+    "remediation": "Set AllowGameDVR to 0 under HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR. On a shared gaming PC, background capture can leave the previous tenant's screen recording available to the next tenant.",
+    "reference": "Microsoft Learn — ApplicationManagement policy CSP (AllowGameDVR)"
+  },
+  {
     "id": "ai-clipboard-history-disabled",
     "title": "Clipboard history is disabled",
     "severity": "high",

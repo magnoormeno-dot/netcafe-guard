@@ -120,6 +120,8 @@ function probeAiSurface(facts) {
     facts.recallDisabled = n === 1;
   }
 
+  probeGameDvr(facts);
+
   // Windows Copilot — an assistant with system reach on a machine shared by
   // strangers. Venues should decide deliberately, not inherit the default.
   const copilotOff =
@@ -161,6 +163,27 @@ function probeAiSurface(facts) {
       const n = parseInt(v, 16) || parseInt(v, 10);
       return n === 0;
     });
+  }
+}
+
+function probeGameDvr(facts, query = regQuery) {
+  const policy = query(
+    'HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR',
+    'AllowGameDVR'
+  );
+  if (policy !== undefined) {
+    const n = parseInt(policy, 16) || parseInt(policy, 10);
+    facts.gameDvrDisabled = n === 0;
+    return;
+  }
+
+  const userSetting = query(
+    'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\GameDVR',
+    'AppCaptureEnabled'
+  );
+  if (userSetting !== undefined) {
+    const n = parseInt(userSetting, 16) || parseInt(userSetting, 10);
+    facts.gameDvrDisabled = n === 0;
   }
 }
 
@@ -269,6 +292,7 @@ module.exports = {
   regQuery,
   detectService,
   probeAiSurface,
+  probeGameDvr,
   probeSessionRestore,
   probeLeftoverCredentials,
   LEFTOVER_CREDENTIAL_CANDIDATES
