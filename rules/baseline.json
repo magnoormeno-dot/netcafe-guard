@@ -60,6 +60,16 @@
     "reference": "docs/VISION.md — AI surface area"
   },
   {
+    "id": "ai-no-leftover-agent-configs",
+    "title": "No leftover AI agent tool or MCP server configs in the home directory",
+    "severity": "high",
+    "category": "ai-surface",
+    "platforms": ["all"],
+    "check": { "fact": "agentToolConfigCount", "operator": "lte", "value": 0 },
+    "remediation": "Remove agent tool and MCP server configuration files (claude_desktop_config.json, .cursor/mcp.json, .codex/config.toml, ...) from the shared profile and wipe the profile between sessions. These files map exactly which tools and servers the previous tenant's agent could reach — often with tokens embedded in env blocks — and hand the next tenant a preconfigured, pre-approved agent.",
+    "reference": "docs/VISION.md — AI surface area"
+  },
+  {
     "id": "tenant-browser-password-saving-off",
     "title": "Browser password saving is disabled by policy",
     "severity": "high",
@@ -145,6 +155,7 @@
     "severity": "medium",
     "category": "session",
     "platforms": ["win32"],
+    "profiles": ["shared-office"],
     "check": { "fact": "screenLockTimeoutSec", "operator": "gte", "value": 60 },
     "remediation": "Set a screen-saver idle timeout so abandoned sessions lock. A value of 0 means the session never locks on its own.",
     "reference": "CIS — Interactive logon: Machine inactivity limit"
@@ -155,6 +166,7 @@
     "severity": "low",
     "category": "session",
     "platforms": ["win32"],
+    "profiles": ["shared-office"],
     "check": { "fact": "screenLockTimeoutSec", "operator": "lte", "value": 900 },
     "remediation": "Reduce the idle timeout to 900 seconds or less so abandoned sessions lock promptly.",
     "reference": "CIS — Interactive logon: Machine inactivity limit"
@@ -165,6 +177,7 @@
     "severity": "medium",
     "category": "session",
     "platforms": ["win32"],
+    "profiles": ["shared-office"],
     "check": { "fact": "screenLockOnResume", "operator": "isTrue" },
     "remediation": "Enable 'On resume, display logon screen' so the lock actually requires re-authentication.",
     "reference": "CIS — Screen saver: password protect"

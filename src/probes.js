@@ -211,8 +211,7 @@ const LEFTOVER_CREDENTIAL_CANDIDATES = [
   '.claude.json',
   '.codex/auth.json',
   '.config/gh/hosts.yml',
-  '.config/openai',
-  'AppData/Roaming/Claude/claude_desktop_config.json'
+  '.config/openai'
 ];
 
 /**
@@ -239,6 +238,49 @@ function probeLeftoverCredentials(facts) {
   facts.leftoverCredentialCount = found.length;
 }
 
+/**
+ * Relative home-dir paths checked for leftover AI agent tool / MCP server
+ * configuration. Existence checks ONLY — never read file contents.
+ * OS-specific paths (AppData, Library) simply don't exist elsewhere.
+ */
+const AGENT_TOOL_CONFIG_CANDIDATES = [
+  '.mcp.json',
+  '.claude/settings.json',
+  '.cursor/mcp.json',
+  '.codeium/windsurf/mcp_config.json',
+  '.continue/config.json',
+  '.gemini/settings.json',
+  '.codex/config.toml',
+  '.config/Claude/claude_desktop_config.json',
+  'Library/Application Support/Claude/claude_desktop_config.json',
+  'AppData/Roaming/Claude/claude_desktop_config.json',
+  'AppData/Roaming/Code/User/mcp.json'
+];
+
+/**
+ * An agent/MCP config left behind maps exactly which tools and servers the
+ * previous tenant's assistant could reach — often with tokens embedded in env
+ * blocks — and hands the next tenant a preconfigured, pre-approved agent.
+ *
+ * Existence checks ONLY, same standard as the credential probe.
+ */
+function probeAgentToolConfigs(facts) {
+  const home = os.homedir();
+  if (!home) return;
+
+  const found = [];
+  for (const rel of AGENT_TOOL_CONFIG_CANDIDATES) {
+    const full = path.join(home, ...rel.split('/'));
+    try {
+      if (fs.existsSync(full)) found.push('~/' + rel);
+    } catch (_err) {
+      /* unreadable path — treat as not found rather than crashing the scan */
+    }
+  }
+  facts.agentToolConfigFiles = found;
+  facts.agentToolConfigCount = found.length;
+}
+
 /* ---------- Cross-platform probes ---------- */
 
 function probeCommon(facts) {
@@ -248,6 +290,7 @@ function probeCommon(facts) {
   facts.osRelease = os.release();
   facts.uptimeHours = Math.round((os.uptime() / 3600) * 10) / 10;
   probeLeftoverCredentials(facts);
+  probeAgentToolConfigs(facts);
 }
 
 /**
@@ -271,5 +314,7 @@ module.exports = {
   probeAiSurface,
   probeSessionRestore,
   probeLeftoverCredentials,
-  LEFTOVER_CREDENTIAL_CANDIDATES
+  probeAgentToolConfigs,
+  LEFTOVER_CREDENTIAL_CANDIDATES,
+  AGENT_TOOL_CONFIG_CANDIDATES
 };

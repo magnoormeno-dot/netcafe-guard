@@ -54,6 +54,11 @@ function validateRule(rule, index) {
   if (rule.platforms && !Array.isArray(rule.platforms)) {
     problems.push(`${where}: "platforms" must be an array`);
   }
+  if (rule.profiles !== undefined) {
+    if (!Array.isArray(rule.profiles) || rule.profiles.some((p) => typeof p !== 'string' || !p)) {
+      problems.push(`${where}: "profiles" must be an array of non-empty strings`);
+    }
+  }
   return problems;
 }
 
@@ -90,6 +95,20 @@ function loadRulesFromFile(file) {
   return parsed;
 }
 
+/**
+ * Every profile name declared across a ruleset ("all" is not a profile).
+ * The CLI uses this to warn when --profile names something no rule declares.
+ */
+function declaredProfiles(rules) {
+  const names = new Set();
+  for (const rule of rules) {
+    for (const p of (rule && rule.profiles) || []) {
+      if (p !== 'all') names.add(p);
+    }
+  }
+  return [...names].sort();
+}
+
 function defaultRulesPath() {
   return path.join(__dirname, '..', 'rules', 'baseline.json');
 }
@@ -103,6 +122,7 @@ module.exports = {
   VALID_OPERATORS,
   validateRule,
   validateRules,
+  declaredProfiles,
   loadRulesFromFile,
   loadDefaultRules,
   defaultRulesPath

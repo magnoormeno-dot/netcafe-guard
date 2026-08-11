@@ -30,6 +30,19 @@ function ruleAppliesToPlatform(rule, platform) {
 }
 
 /**
+ * Decide whether a rule applies to the requested venue profile.
+ * When no profile is requested, every rule applies (the full baseline).
+ * A rule with no `profiles` field, or one containing "all", belongs to
+ * every profile.
+ */
+function ruleAppliesToProfile(rule, profile) {
+  if (!profile) return true;
+  if (!rule.profiles || rule.profiles.length === 0) return true;
+  if (rule.profiles.includes('all')) return true;
+  return rule.profiles.includes(profile);
+}
+
+/**
  * Compare an observed value against a rule's check definition.
  * Returns true when the observed value satisfies the "secure" expectation.
  */
@@ -66,11 +79,11 @@ function checkPasses(check, observed) {
 /**
  * Evaluate a single rule against the facts.
  * Status is one of: pass | fail | skip | unknown | error
- *  - skip:    rule does not apply to this platform
+ *  - skip:    rule does not apply to this platform or the requested profile
  *  - unknown: the probe could not determine the fact (missing/undefined)
  *  - error:   the rule itself is malformed
  */
-function evaluateRule(rule, facts, platform) {
+function evaluateRule(rule, facts, platform, profile) {
   const base = {
     id: rule.id,
     title: rule.title,
@@ -82,6 +95,10 @@ function evaluateRule(rule, facts, platform) {
 
   if (!ruleAppliesToPlatform(rule, platform)) {
     return { ...base, status: 'skip', reason: 'not-applicable', observed: undefined };
+  }
+
+  if (!ruleAppliesToProfile(rule, profile)) {
+    return { ...base, status: 'skip', reason: 'profile-not-applicable', observed: undefined };
   }
 
   if (!rule.check || !rule.check.fact || !rule.check.operator) {
@@ -146,11 +163,11 @@ function describeExpectation(check) {
 /**
  * Evaluate every rule and return the findings array.
  */
-function evaluate(rules, facts, platform) {
+function evaluate(rules, facts, platform, profile) {
   if (!Array.isArray(rules)) {
     throw new TypeError('rules must be an array');
   }
-  return rules.map((rule) => evaluateRule(rule, facts, platform));
+  return rules.map((rule) => evaluateRule(rule, facts, platform, profile));
 }
 
 /**
@@ -213,6 +230,7 @@ module.exports = {
   SEVERITY_WEIGHTS,
   SEVERITY_ORDER,
   ruleAppliesToPlatform,
+  ruleAppliesToProfile,
   checkPasses,
   evaluateRule,
   evaluate,

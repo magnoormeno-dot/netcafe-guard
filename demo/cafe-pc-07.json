@@ -18,6 +18,8 @@
   "sessionRestoreActive": false,
   "leftoverCredentialCount": 2,
   "leftoverCredentialFiles": ["~/.ssh/id_rsa", "~/.aws/credentials"],
+  "agentToolConfigCount": 0,
+  "agentToolConfigFiles": [],
   "recallDisabled": false,
   "clipboardHistoryDisabled": false,
   "clipboardSyncDisabled": true,
