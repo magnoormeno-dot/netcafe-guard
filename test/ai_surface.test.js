@@ -32,6 +32,8 @@ const AI_EXPOSED = {
   sessionRestoreActive: false,
   leftoverCredentialCount: 2,
   leftoverCredentialFiles: ['~/.ssh/id_rsa', '~/.aws/credentials'],
+  agentToolConfigCount: 1,
+  agentToolConfigFiles: ['~/.cursor/mcp.json'],
   recallDisabled: false,
   gameDvrDisabled: false,
   clipboardHistoryDisabled: false,
@@ -46,6 +48,8 @@ const FULLY_HARDENED = {
   sessionRestoreAgent: 'DFServ',
   leftoverCredentialCount: 0,
   leftoverCredentialFiles: [],
+  agentToolConfigCount: 0,
+  agentToolConfigFiles: [],
   recallDisabled: true,
   gameDvrDisabled: true,
   clipboardHistoryDisabled: true,
@@ -67,6 +71,7 @@ test('a classically-clean machine still fails on AI surface and tenant hygiene',
   assert.ok(failed.includes('ai-clipboard-history-disabled'));
   assert.ok(failed.includes('ai-clipboard-sync-disabled'));
   assert.ok(failed.includes('ai-assistant-policy-set'));
+  assert.ok(failed.includes('ai-no-leftover-agent-configs'));
   assert.ok(failed.includes('tenant-browser-password-saving-off'));
 
   // No classical rule fires — proving the new categories carry the finding.

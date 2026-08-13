@@ -2,8 +2,9 @@
 'use strict';
 
 const fs = require('fs');
-const { scan, renderText, renderJson, loadDefaultRules, version } = require('../src');
+const { scan, renderText, renderJson, renderHtml, loadDefaultRules, version } = require('../src');
 const { loadRulesFromFile } = require('../src/rules');
+const { ruleAppliesToProfile } = require('../src/engine');
 
 const HELP = `
 netcafe-guard v${version}
@@ -11,15 +12,22 @@ Security baseline auditor for shared and public PCs.
 
 Usage:
   netcafe-guard scan [options]     Run the baseline scan on this machine
-  netcafe-guard list-rules         Print the active ruleset
+  netcafe-guard list-rules         Print the active ruleset (honours --rules
+                                   and --profile)
   netcafe-guard version            Print version
   netcafe-guard help               Show this help
 
 Scan options:
   --json                 Output machine-readable JSON
+  --html                 Output a standalone HTML report — hand it to the
+                         venue owner: scan --html > report.html
   --all                  Show every check, including passes and skips
   --no-color             Disable ANSI colors
   --rules <file>         Use a custom ruleset (JSON)
+  --profile <name>       Venue profile (baseline knows gaming-cafe and
+                         shared-office). Rules declaring only other profiles
+                         are skipped; untagged rules always apply. Preview
+                         with: list-rules --profile <name>
   --facts <file>         Evaluate against a facts JSON file instead of probing
                          the host (useful for testing rules)
   --fail-under <score>   Exit non-zero if the score is below this threshold
@@ -28,7 +36,8 @@ Scan options:
 Examples:
   netcafe-guard scan
   netcafe-guard scan --json > report.json
-  netcafe-guard scan --fail-under 80
+  netcafe-guard scan --html > report.html
+  netcafe-guard scan --profile gaming-cafe --fail-under 80
   netcafe-guard scan --rules ./my-cafe-rules.json --all
 
 Read-only by design: netcafe-guard never changes the machine it audits.
@@ -39,9 +48,11 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--json') args.flags.json = true;
+    else if (a === '--html') args.flags.html = true;
     else if (a === '--all') args.flags.all = true;
     else if (a === '--no-color') args.flags.color = false;
     else if (a === '--rules') args.flags.rules = argv[++i];
+    else if (a === '--profile') args.flags.profile = argv[++i];
     else if (a === '--facts') args.flags.facts = argv[++i];
     else if (a === '--fail-under') args.flags.failUnder = Number(argv[++i]);
     else args._.push(a);
@@ -66,16 +77,23 @@ function main() {
 
   if (command === 'list-rules') {
     const rules = flags.rules ? loadRulesFromFile(flags.rules) : loadDefaultRules();
-    for (const r of rules) {
+    const shown = flags.profile ? rules.filter((r) => ruleAppliesToProfile(r, flags.profile)) : rules;
+    for (const r of shown) {
       const platforms = (r.platforms || ['all']).join(',');
-      process.stdout.write(`${r.id}  [${r.severity || 'medium'}]  (${platforms})  ${r.title}\n`);
+      const profiles = r.profiles && r.profiles.length ? `  {${r.profiles.join(',')}}` : '';
+      process.stdout.write(`${r.id}  [${r.severity || 'medium'}]  (${platforms})${profiles}  ${r.title}\n`);
     }
     return 0;
   }
 
   if (command === 'scan') {
-    const opts = {};
-    if (flags.rules) opts.rulesFile = flags.rules;
+    if (flags.json && flags.html) {
+      process.stderr.write('netcafe-guard: choose one output format — --json or --html\n');
+      return 1;
+    }
+
+    const opts = { rules: flags.rules ? loadRulesFromFile(flags.rules) : loadDefaultRules() };
+    if (flags.profile) opts.profile = flags.profile;
     if (flags.facts) {
       opts.facts = JSON.parse(fs.readFileSync(flags.facts, 'utf8'));
     }
@@ -83,6 +101,8 @@ function main() {
 
     if (flags.json) {
       process.stdout.write(renderJson(result) + '\n');
+    } else if (flags.html) {
+      process.stdout.write(renderHtml(result));
     } else {
       process.stdout.write(renderText(result, { color: flags.color, all: flags.all }));
     }

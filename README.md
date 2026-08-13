@@ -9,7 +9,7 @@
 [![Zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](package.json)
 
 <p align="center">
-  <img src="docs/assets/demo.svg" width="755" alt="Animated demo: netcafe-guard scans a café PC — 13 classical checks pass, yet the machine scores 10/100 (F) because session restore is inactive, credentials were left behind, and Recall and clipboard history are on">
+  <img src="docs/assets/demo.svg" width="755" alt="Animated demo: netcafe-guard scans a café PC — 14 checks pass, yet the machine scores 10/100 (F) because session restore is inactive, credentials were left behind, and Recall and clipboard history are on">
 </p>
 <p align="center"><sub>A classically-clean seat that is still an F where it matters. Replay it from a clone:<br>
 <code>node bin/netcafe-guard.js scan --facts demo/cafe-pc-07.json --platform win32</code></sub></p>
@@ -61,7 +61,7 @@ that reconfigured leased machines would itself become the multi-tenant risk.
   host: CAFE-PC-07  ·  platform: win32/x64
 
   Score: 10/100  (F)
-  13 pass · 4 fail · 0 unknown · 0 skipped
+  14 pass · 4 fail · 0 unknown · 0 skipped
 
   FAIL [critical] tenant-session-restore-active     Session restore / write protection is active
         fix: Without this, nothing else on a leased PC can be trusted between users...
@@ -87,6 +87,8 @@ npm install -g netcafe-guard    # or install globally
 netcafe-guard scan                    # audit this machine, show problems
 netcafe-guard scan --all              # show every check, including passes
 netcafe-guard scan --json > out.json  # machine-readable, for dashboards
+netcafe-guard scan --html > report.html  # standalone report to hand to the owner
+netcafe-guard scan --profile gaming-cafe # venue profile (or shared-office)
 netcafe-guard scan --fail-under 80    # exit non-zero below a score — for CI / scheduled runs
 netcafe-guard scan --rules ./cafe.json  # your own ruleset
 netcafe-guard list-rules              # what does the baseline check?
@@ -109,7 +111,7 @@ Rules are grouped by the priority order argued in the vision doc:
 | Priority | Category | Checks |
 | --- | --- | --- |
 | 1 | **Multi-tenant hygiene** | session restore / write protection · leftover credential & AI agent key files · browser password saving |
-| 2 | **AI surface area** | screen recall capture · clipboard history · cross-device clipboard sync · explicit assistant policy |
+| 2 | **AI surface area** | screen recall capture · clipboard history · cross-device clipboard sync · explicit assistant policy · leftover agent tool / MCP configs |
 | 3 | **Classical baseline** | auto-logon · cleartext registry password · Guest account · inbound RDP · autorun · firewall · Defender real-time · screen auto-lock |
 
 Priority 3 is unglamorous and still failing in the field, which is why it ships
@@ -143,13 +145,27 @@ Rules are plain JSON — no code required:
 }
 ```
 
+## Venue profiles
+
+The same seat is not the same threat model in every venue. `--profile` keeps
+one baseline but skips rules a venue type deliberately handles differently:
+
+- `--profile gaming-cafe` — café seats sit under a management/billing client
+  that owns the session lifecycle, so the OS screen-saver lock rules are
+  skipped (they are not the control actually in use).
+- `--profile shared-office` — the full baseline including idle auto-lock.
+
+Rules opt in via a `profiles` field; untagged rules apply under every profile,
+and running without `--profile` always evaluates the full baseline.
+
 ## Roadmap
 
-- [ ] More AI-surface rules: local agent tool configs, MCP server exposure on shared hosts
+- [x] AI-surface rule for leftover local agent tool / MCP server configs (`ai-no-leftover-agent-configs`)
+- [ ] MCP server network exposure on shared hosts
 - [ ] Café management suite detection (region-specific write-filter agents)
 - [ ] Linux and macOS baselines (shared library terminals, Mac kiosks)
-- [ ] `--profile gaming-cafe` vs `--profile shared-office` rule sets
-- [ ] HTML report output for handing to a non-technical owner
+- [x] `--profile gaming-cafe` vs `--profile shared-office` rule sets
+- [x] HTML report output for handing to a non-technical owner (`--html`)
 - [ ] Localised remediation text (zh first)
 
 ## Contributing
