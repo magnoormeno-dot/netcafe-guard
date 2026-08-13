@@ -13,6 +13,7 @@ expectation, the rule passes; otherwise it fails.
 | `severity` | no | `critical` \| `high` \| `medium` \| `low` \| `info`. Defaults to `medium`. Drives the score penalty. |
 | `category` | no | Grouping label, e.g. `authentication`, `network`, `session`. |
 | `platforms` | no | Array of `win32` \| `linux` \| `darwin` \| `all`. Omitted or `["all"]` = every platform. Non-matching platforms are reported as **skip**. |
+| `profiles` | no | Array of venue profile names (the baseline uses `gaming-cafe` and `shared-office`). Omitted or `["all"]` = applies under every profile. With `scan --profile <name>`, rules declaring only other profiles are reported as **skip**; without `--profile` every rule applies. |
 | `check` | yes | `{ "fact": "...", "operator": "...", "value": ... }` |
 | `remediation` | recommended | Exactly what to run or click to fix it. This is the most valuable part for the person reading the report. |
 | `reference` | no | Where the rule comes from (CIS Benchmark, vendor doc, CVE). |
@@ -42,7 +43,8 @@ Every evaluated rule ends in one of:
 - **unknown** — the probe could not determine the fact. **This is not a pass.**
   Unknown means "go check this by hand." Only the `absent` operator treats a
   missing fact as satisfied.
-- **skip** — the rule does not apply to this platform.
+- **skip** — the rule does not apply to this platform (`reason: not-applicable`)
+  or to the requested `--profile` (`reason: profile-not-applicable`).
 - **error** — the rule itself is malformed (the validator normally catches this
   before a scan ever runs).
 
@@ -57,7 +59,8 @@ by the priority order in [VISION.md](VISION.md).
 
 **AI surface area** — what does the AI here see, keep, and hold?
 `recallDisabled`, `gameDvrDisabled`, `clipboardHistoryDisabled`, `clipboardSyncDisabled`,
-`copilotPolicySet`, `copilotDisabled`
+`copilotPolicySet`, `copilotDisabled`, `agentToolConfigCount`,
+`agentToolConfigFiles`
 
 **Classical baseline (Windows)**
 `autoAdminLogon`, `defaultPasswordStored`, `guestAccountActive`, `rdpEnabled`,
@@ -67,14 +70,30 @@ by the priority order in [VISION.md](VISION.md).
 **Cross-platform**
 `platform`, `arch`, `hostname`, `osRelease`, `uptimeHours`
 
-### A note on credential probes
+### A note on credential and agent-config probes
 
-`leftoverCredentialFiles` contains tilde-prefixed *labels* only
-(`~/.ssh/id_rsa`, `~/.aws/credentials`, `~/.kube/config`, `~/.docker/config.json`,
-`~/.claude.json`, `~/.codex/auth.json`). Probes check for
-**existence** and never read the contents of
-a credential file — a scanner that slurped secrets would itself be the leak.
-Keep any new credential probe to the same standard.
+`leftoverCredentialFiles` and `agentToolConfigFiles` contain tilde-prefixed
+*labels* only (`~/.ssh/id_rsa`, `~/.aws/credentials`, `~/.kube/config`,
+`~/.claude.json`, `~/.cursor/mcp.json`, `~/.codex/config.toml`). Probes check
+for **existence** and never read the contents of a credential or config file —
+a scanner that slurped secrets would itself be the leak. Keep any new probe of
+this kind to the same standard.
+
+## Profiles
+
+The same seat is not the same threat model in every venue, so rules can opt
+into venue profiles. The baseline ships two:
+
+- `gaming-cafe` — seats run under a café management/billing client that owns
+  the session lifecycle. The OS screen-saver lock rules (`win-screenlock-*`)
+  declare `"profiles": ["shared-office"]` and are skipped here, because the
+  screensaver is not the control actually in use on these seats.
+- `shared-office` — the full baseline, including idle auto-lock.
+
+Untagged rules apply under every profile, and a scan without `--profile`
+always evaluates the full baseline. Tag a rule only when a venue type
+genuinely handles that control a different way — a profile is not a licence
+to relax the baseline.
 
 Need a fact that doesn't exist yet? Add a probe (see
 [CONTRIBUTING.md](../CONTRIBUTING.md)). Probes are always read-only and return

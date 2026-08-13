@@ -7,6 +7,23 @@ All notable changes to this project are documented here. Format loosely follows
 ## [Unreleased]
 
 ### Added
+- **HTML report** (`scan --html > report.html`): standalone, printable,
+  no external assets — made to be handed to a non-technical venue owner.
+- **Venue profiles** (`scan --profile gaming-cafe|shared-office`): rules can
+  declare a `profiles` field; rules declaring only other profiles are skipped
+  (`profile-not-applicable`). The screen-lock rules are tagged
+  `shared-office` — café seats sit under a management client that owns the
+  session lifecycle. `list-rules` honours `--profile` and shows profile tags.
+- **New AI-surface rule** `ai-no-leftover-agent-configs`: leftover agent tool /
+  MCP server configs (claude_desktop_config.json, `.cursor/mcp.json`,
+  `.codex/config.toml`, `.gemini/settings.json`, …) hand the next tenant a
+  preconfigured, pre-approved agent. Existence-only probe, all platforms;
+  `claude_desktop_config.json` moved here from the credential watchlist.
+- 16 further tests (47 total) covering profiles, the HTML renderer (including
+  escaping of rule-supplied text) and the agent-config probe.
+- `scan` and `list-rules` warn on stderr when `--profile` names a profile no
+  rule declares (typos otherwise silently skip the profile-tagged rules), plus
+  CLI tests. The demo facts now cover the Game DVR rule from #21.
 - **Project vision** (`docs/VISION.md`): leased/multi-tenant AI-equipped endpoints
   are the target; the internet café is the wedge because it is the most developed
   form of leased computing that already exists. README now leads with this.
