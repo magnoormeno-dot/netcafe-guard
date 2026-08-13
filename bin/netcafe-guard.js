@@ -3,8 +3,26 @@
 
 const fs = require('fs');
 const { scan, renderText, renderJson, renderHtml, loadDefaultRules, version } = require('../src');
-const { loadRulesFromFile } = require('../src/rules');
+const { loadRulesFromFile, declaredProfiles } = require('../src/rules');
 const { ruleAppliesToProfile } = require('../src/engine');
+
+/*
+ * "gaming-cafe" is documented but intentionally declared by no rule — it is
+ * the baseline minus the shared-office-only rules, so it never needs a tag.
+ */
+const DOCUMENTED_PROFILES = ['gaming-cafe'];
+
+function warnUnknownProfile(profile, rules) {
+  if (!profile) return;
+  const known = new Set([...declaredProfiles(rules), ...DOCUMENTED_PROFILES]);
+  if (!known.has(profile)) {
+    process.stderr.write(
+      `netcafe-guard: warning: no rule declares profile "${profile}" ` +
+      `(known: ${[...known].sort().join(', ')}); ` +
+      'rules tagged for other profiles will be skipped\n'
+    );
+  }
+}
 
 const HELP = `
 netcafe-guard v${version}
@@ -77,6 +95,7 @@ function main() {
 
   if (command === 'list-rules') {
     const rules = flags.rules ? loadRulesFromFile(flags.rules) : loadDefaultRules();
+    warnUnknownProfile(flags.profile, rules);
     const shown = flags.profile ? rules.filter((r) => ruleAppliesToProfile(r, flags.profile)) : rules;
     for (const r of shown) {
       const platforms = (r.platforms || ['all']).join(',');
@@ -93,6 +112,7 @@ function main() {
     }
 
     const opts = { rules: flags.rules ? loadRulesFromFile(flags.rules) : loadDefaultRules() };
+    warnUnknownProfile(flags.profile, opts.rules);
     if (flags.profile) opts.profile = flags.profile;
     if (flags.facts) {
       opts.facts = JSON.parse(fs.readFileSync(flags.facts, 'utf8'));
