@@ -9,7 +9,7 @@
 [![Zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](package.json)
 
 <p align="center">
-  <img src="docs/assets/demo.svg" width="755" alt="Animated demo: netcafe-guard scans a café PC — 14 checks pass, yet the machine scores 10/100 (F) because session restore is inactive, credentials were left behind, and Recall and clipboard history are on">
+  <img src="docs/assets/demo.svg" width="755" alt="Animated demo: netcafe-guard scans a café PC — 15 checks pass, yet the machine scores 10/100 (F) because session restore is inactive, credentials were left behind, and Recall and clipboard history are on">
 </p>
 <p align="center"><sub>A classically-clean seat that is still an F where it matters. Replay it from a clone:<br>
 <code>node bin/netcafe-guard.js scan --facts demo/cafe-pc-07.json --platform win32</code></sub></p>
@@ -61,7 +61,7 @@ that reconfigured leased machines would itself become the multi-tenant risk.
   host: CAFE-PC-07  ·  platform: win32/x64
 
   Score: 10/100  (F)
-  14 pass · 4 fail · 0 unknown · 0 skipped
+  15 pass · 4 fail · 0 unknown · 0 skipped
 
   FAIL [critical] tenant-session-restore-active     Session restore / write protection is active
         fix: Without this, nothing else on a leased PC can be trusted between users...

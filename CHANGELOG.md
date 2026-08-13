@@ -21,6 +21,9 @@ All notable changes to this project are documented here. Format loosely follows
   `claude_desktop_config.json` moved here from the credential watchlist.
 - 16 further tests (47 total) covering profiles, the HTML renderer (including
   escaping of rule-supplied text) and the agent-config probe.
+- `scan` and `list-rules` warn on stderr when `--profile` names a profile no
+  rule declares (typos otherwise silently skip the profile-tagged rules), plus
+  CLI tests. The demo facts now cover the Game DVR rule from #21.
 - **Project vision** (`docs/VISION.md`): leased/multi-tenant AI-equipped endpoints
   are the target; the internet café is the wedge because it is the most developed
   form of leased computing that already exists. README now leads with this.
