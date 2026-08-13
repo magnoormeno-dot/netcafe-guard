@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const { scan } = require('../src');
 const {
   probeLeftoverCredentials,
+  probeGameDvr,
   LEFTOVER_CREDENTIAL_CANDIDATES
 } = require('../src/probes');
 
@@ -32,6 +33,7 @@ const AI_EXPOSED = {
   leftoverCredentialCount: 2,
   leftoverCredentialFiles: ['~/.ssh/id_rsa', '~/.aws/credentials'],
   recallDisabled: false,
+  gameDvrDisabled: false,
   clipboardHistoryDisabled: false,
   clipboardSyncDisabled: false,
   copilotPolicySet: false,
@@ -45,6 +47,7 @@ const FULLY_HARDENED = {
   leftoverCredentialCount: 0,
   leftoverCredentialFiles: [],
   recallDisabled: true,
+  gameDvrDisabled: true,
   clipboardHistoryDisabled: true,
   clipboardSyncDisabled: true,
   copilotPolicySet: true,
@@ -60,6 +63,7 @@ test('a classically-clean machine still fails on AI surface and tenant hygiene',
   assert.ok(failed.includes('tenant-session-restore-active'));
   assert.ok(failed.includes('tenant-no-leftover-credentials'));
   assert.ok(failed.includes('ai-recall-disabled'));
+  assert.ok(failed.includes('capture-gamedvr-disabled'));
   assert.ok(failed.includes('ai-clipboard-history-disabled'));
   assert.ok(failed.includes('ai-clipboard-sync-disabled'));
   assert.ok(failed.includes('ai-assistant-policy-set'));
@@ -122,4 +126,25 @@ test('AI-surface rules are skipped on non-Windows but tenant credential rule sti
 
   const recall = result.findings.find((f) => f.id === 'ai-recall-disabled');
   assert.equal(recall.status, 'skip');
+});
+
+test('Game DVR policy takes precedence over the per-user capture setting', () => {
+  const facts = {};
+  const values = new Map([
+    ['AllowGameDVR', '0x1'],
+    ['AppCaptureEnabled', '0x0']
+  ]);
+
+  probeGameDvr(facts, (_key, value) => values.get(value));
+
+  assert.equal(facts.gameDvrDisabled, false);
+});
+
+test('Game DVR falls back to the per-user setting when policy is absent', () => {
+  const facts = {};
+  probeGameDvr(facts, (_key, value) =>
+    value === 'AppCaptureEnabled' ? '0x0' : undefined
+  );
+
+  assert.equal(facts.gameDvrDisabled, true);
 });

@@ -56,7 +56,7 @@ by the priority order in [VISION.md](VISION.md).
 `leftoverCredentialFiles`, `browserPasswordSavingDisabled`
 
 **AI surface area** — what does the AI here see, keep, and hold?
-`recallDisabled`, `clipboardHistoryDisabled`, `clipboardSyncDisabled`,
+`recallDisabled`, `gameDvrDisabled`, `clipboardHistoryDisabled`, `clipboardSyncDisabled`,
 `copilotPolicySet`, `copilotDisabled`
 
 **Classical baseline (Windows)**
