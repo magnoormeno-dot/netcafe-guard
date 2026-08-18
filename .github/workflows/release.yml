@@ -24,7 +24,15 @@ jobs:
           node -e "const v = require('./package.json').version; if (process.env.GITHUB_REF !== 'refs/tags/v' + v) { console.error('tag ' + process.env.GITHUB_REF + ' != package.json version ' + v); process.exit(1); }"
       - name: Run tests
         run: node --test
+      - name: Skip publish when this version is already on npm
+        id: preflight
+        run: |
+          PKG_V=$(node -p "require('./package.json').version")
+          NPM_V=$(npm view netcafe-guard version 2>/dev/null || echo none)
+          echo "package.json $PKG_V — registry $NPM_V"
+          echo "skip=$([ "$PKG_V" = "$NPM_V" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - name: Publish to npm with provenance
+        if: steps.preflight.outputs.skip != 'true'
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || secrets.EXPIRATION90DAYS }}
