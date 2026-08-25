@@ -233,6 +233,7 @@ const LEFTOVER_CREDENTIAL_CANDIDATES = [
   '.claude/.credentials.json',
   '.claude.json',
   '.codex/auth.json',
+  '.gemini/oauth_creds.json',
   '.config/gh/hosts.yml',
   '.config/openai'
 ];

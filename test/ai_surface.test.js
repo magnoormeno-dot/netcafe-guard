@@ -121,6 +121,10 @@ test('leftover-credential watchlist covers cloud and dev CLI credential paths', 
   }
 });
 
+test('leftover-credential watchlist covers the Gemini CLI OAuth token', () => {
+  assert.ok(LEFTOVER_CREDENTIAL_CANDIDATES.includes('.gemini/oauth_creds.json'));
+});
+
 test('AI-surface rules are skipped on non-Windows but tenant credential rule still runs', () => {
   const result = scan({
     facts: { hostname: 'kiosk', platform: 'linux', arch: 'x64', leftoverCredentialCount: 1 },
