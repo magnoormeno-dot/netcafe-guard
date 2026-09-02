@@ -9,7 +9,7 @@
 [![Zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](package.json)
 
 <p align="center">
-  <img src="docs/assets/demo.svg" width="755" alt="Animated demo: netcafe-guard scans a café PC — 15 checks pass, yet the machine scores 10/100 (F) because session restore is inactive, credentials were left behind, and Recall and clipboard history are on">
+  <img src="docs/assets/demo.svg" width="755" alt="Animated demo: netcafe-guard scans a café PC — 17 checks pass, yet the machine scores 10/100 (F) because session restore is inactive, credentials were left behind, and Recall and clipboard history are on">
 </p>
 <p align="center"><sub>A classically-clean seat that is still an F where it matters. Replay it from a clone:<br>
 <code>node bin/netcafe-guard.js scan --facts demo/cafe-pc-07.json --platform win32</code></sub></p>
@@ -61,7 +61,7 @@ that reconfigured leased machines would itself become the multi-tenant risk.
   host: CAFE-PC-07  ·  platform: win32/x64
 
   Score: 10/100  (F)
-  15 pass · 4 fail · 0 unknown · 0 skipped
+  17 pass · 4 fail · 0 unknown · 0 skipped
 
   FAIL [critical] tenant-session-restore-active     Session restore / write protection is active
         fix: Without this, nothing else on a leased PC can be trusted between users...
@@ -92,10 +92,18 @@ netcafe-guard scan --profile gaming-cafe # venue profile (or shared-office)
 netcafe-guard scan --fail-under 80    # exit non-zero below a score — for CI / scheduled runs
 netcafe-guard scan --rules ./cafe.json  # your own ruleset
 netcafe-guard list-rules              # what does the baseline check?
+netcafe-guard diff before.json after.json  # what drifted between two --json scans (exit 3 on regressions)
 ```
 
 Run it after imaging a machine, after any config change, and on a schedule
 (Task Scheduler → `netcafe-guard scan --fail-under 80`) so drift gets caught.
+To see *what* drifted, keep the post-imaging report and diff against it:
+
+```bash
+netcafe-guard scan --json > golden.json        # right after imaging
+netcafe-guard scan --json > now.json           # later, from the scheduler
+netcafe-guard diff golden.json now.json        # regressions, fixes, checks gone unknown
+```
 
 ### Scores
 
@@ -111,7 +119,7 @@ Rules are grouped by the priority order argued in the vision doc:
 | Priority | Category | Checks |
 | --- | --- | --- |
 | 1 | **Multi-tenant hygiene** | session restore / write protection · leftover credential & AI agent key files · browser password saving |
-| 2 | **AI surface area** | screen recall capture · clipboard history · cross-device clipboard sync · explicit assistant policy · leftover agent tool / MCP configs |
+| 2 | **AI surface area** | screen recall capture · leftover Recall snapshot store · Game DVR capture · clipboard history · cross-device clipboard sync · explicit assistant policy · leftover agent tool / MCP configs · local AI model servers exposed to the network |
 | 3 | **Classical baseline** | auto-logon · cleartext registry password · Guest account · inbound RDP · autorun · firewall · Defender real-time · screen auto-lock |
 
 Priority 3 is unglamorous and still failing in the field, which is why it ships
@@ -161,7 +169,8 @@ and running without `--profile` always evaluates the full baseline.
 ## Roadmap
 
 - [x] AI-surface rule for leftover local agent tool / MCP server configs (`ai-no-leftover-agent-configs`)
-- [ ] MCP server network exposure on shared hosts
+- [x] Local AI model servers exposed to the network (Ollama, LM Studio, GPT4All, Jan, KoboldCpp, Gradio UIs)
+- [ ] MCP servers over SSE/HTTP exposed on shared hosts (needs process-level detection — ports alone are too generic)
 - [ ] Café management suite detection (region-specific write-filter agents)
 - [ ] Linux and macOS baselines (shared library terminals, Mac kiosks)
 - [x] `--profile gaming-cafe` vs `--profile shared-office` rule sets

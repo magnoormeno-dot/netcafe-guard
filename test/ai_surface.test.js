@@ -34,7 +34,10 @@ const AI_EXPOSED = {
   leftoverCredentialFiles: ['~/.ssh/id_rsa', '~/.aws/credentials'],
   agentToolConfigCount: 1,
   agentToolConfigFiles: ['~/.cursor/mcp.json'],
+  aiServiceExposedCount: 1,
+  aiServiceExposed: ['Ollama (0.0.0.0:11434)'],
   recallDisabled: false,
+  recallSnapshotStorePresent: true,
   gameDvrDisabled: false,
   clipboardHistoryDisabled: false,
   clipboardSyncDisabled: false,
@@ -50,7 +53,10 @@ const FULLY_HARDENED = {
   leftoverCredentialFiles: [],
   agentToolConfigCount: 0,
   agentToolConfigFiles: [],
+  aiServiceExposedCount: 0,
+  aiServiceExposed: [],
   recallDisabled: true,
+  recallSnapshotStorePresent: false,
   gameDvrDisabled: true,
   clipboardHistoryDisabled: true,
   clipboardSyncDisabled: true,
@@ -68,6 +74,8 @@ test('a classically-clean machine still fails on AI surface and tenant hygiene',
   assert.ok(failed.includes('tenant-no-leftover-credentials'));
   assert.ok(failed.includes('ai-recall-disabled'));
   assert.ok(failed.includes('capture-gamedvr-disabled'));
+  assert.ok(failed.includes('ai-no-recall-snapshot-store'));
+  assert.ok(failed.includes('ai-local-llm-not-exposed'));
   assert.ok(failed.includes('ai-clipboard-history-disabled'));
   assert.ok(failed.includes('ai-clipboard-sync-disabled'));
   assert.ok(failed.includes('ai-assistant-policy-set'));

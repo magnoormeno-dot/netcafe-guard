@@ -58,9 +58,10 @@ by the priority order in [VISION.md](VISION.md).
 `leftoverCredentialFiles`, `browserPasswordSavingDisabled`
 
 **AI surface area** — what does the AI here see, keep, and hold?
-`recallDisabled`, `gameDvrDisabled`, `clipboardHistoryDisabled`, `clipboardSyncDisabled`,
-`copilotPolicySet`, `copilotDisabled`, `agentToolConfigCount`,
-`agentToolConfigFiles`
+`recallDisabled`, `recallSnapshotStorePresent`, `gameDvrDisabled`,
+`clipboardHistoryDisabled`, `clipboardSyncDisabled`, `copilotPolicySet`,
+`copilotDisabled`, `agentToolConfigCount`, `agentToolConfigFiles`,
+`aiServiceExposedCount`, `aiServiceExposed`
 
 **Classical baseline (Windows)**
 `autoAdminLogon`, `defaultPasswordStored`, `guestAccountActive`, `rdpEnabled`,
@@ -69,6 +70,16 @@ by the priority order in [VISION.md](VISION.md).
 
 **Cross-platform**
 `platform`, `arch`, `hostname`, `osRelease`, `uptimeHours`
+
+### A note on the network-exposure probe
+
+`aiServiceExposed` lists local AI model servers (Ollama, LM Studio, GPT4All,
+Jan, KoboldCpp, Gradio-based UIs) whose port is listening on a non-loopback
+address, as labels like `Ollama (0.0.0.0:11434)`. It reads `netstat` / `ss`
+output and nothing else. Generic ports (8080, 8000, 3000) are deliberately
+not in the table — a rule that cries wolf gets switched off. The table lives
+in `AI_SERVICE_PORTS` in `src/probes.js`; add a port only if it is
+distinctive to one AI serving tool and cite its documentation.
 
 ### A note on credential and agent-config probes
 

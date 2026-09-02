@@ -96,6 +96,7 @@ function probeWindows(facts) {
   if (screenSaverSecure !== undefined) facts.screenLockOnResume = screenSaverSecure === '1';
 
   probeAiSurface(facts);
+  probeRecallSnapshotStore(facts);
   probeSessionRestore(facts);
 }
 
@@ -184,6 +185,26 @@ function probeGameDvr(facts, query = regQuery) {
   if (userSetting !== undefined) {
     const n = parseInt(userSetting, 16) || parseInt(userSetting, 10);
     facts.gameDvrDisabled = n === 0;
+  }
+}
+
+/**
+ * Recall keeps its snapshot database and image store on disk under the user
+ * profile (%LOCALAPPDATA%\CoreAIPlatform.00\UKP). Disabling the feature by
+ * policy does not delete what was already captured: on a leased seat that
+ * store is the previous tenant's screen, page by page, until it is wiped.
+ *
+ * Existence check ONLY — the store's contents are never opened.
+ */
+const RECALL_SNAPSHOT_STORE = 'AppData/Local/CoreAIPlatform.00/UKP';
+
+function probeRecallSnapshotStore(facts, home = os.homedir()) {
+  if (!home) return;
+  const full = path.join(home, ...RECALL_SNAPSHOT_STORE.split('/'));
+  try {
+    facts.recallSnapshotStorePresent = fs.existsSync(full);
+  } catch (_err) {
+    /* unreadable path — leave undefined so the rule reports unknown */
   }
 }
 
@@ -305,6 +326,108 @@ function probeAgentToolConfigs(facts) {
   facts.agentToolConfigCount = found.length;
 }
 
+/* ---------- Network exposure of local AI services ---------- */
+
+/**
+ * Local model servers listen on well-known ports. Bound to loopback they are a
+ * personal tool; bound to every interface on a shared LAN they are free
+ * compute for anyone on the network — and most of them (Ollama included) have
+ * no authentication at all, so a neighbour can read prompts, pull or delete
+ * models, and run the previous tenant's setup.
+ *
+ * Only ports that are distinctive to an AI serving tool are listed. Generic
+ * ports (8080, 8000, 3000) are deliberately excluded: too many unrelated
+ * services use them, and a rule that cries wolf gets switched off.
+ */
+const AI_SERVICE_PORTS = {
+  11434: 'Ollama',
+  1234: 'LM Studio',
+  4891: 'GPT4All',
+  1337: 'Jan',
+  5001: 'KoboldCpp',
+  7860: 'Gradio AI web UI (text-generation-webui / Stable Diffusion WebUI)'
+};
+
+const LOOPBACK = /^(127\.|::1$|\[::1\]$|localhost$)/i;
+
+/**
+ * Parse the LISTEN lines of `netstat` / `ss` output into { address, port }.
+ * Understands Windows netstat (addr:port, [v6]:port), Linux ss/netstat
+ * (addr:port, *:port, [::]:port) and macOS netstat (addr.port, *.port).
+ * Pure function — tests feed it captured output.
+ */
+function parseListeningSockets(output) {
+  const sockets = [];
+  if (!output) return sockets;
+  for (const rawLine of output.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!/\bLISTEN(ING)?\b/i.test(line)) continue;
+    const tokens = line.split(/\s+/);
+    for (const token of tokens) {
+      // macOS: 127.0.0.1.11434 / *.11434 — last dot separates the port.
+      // Others: 0.0.0.0:11434 / [::]:11434 / *:11434 — last colon does.
+      const m = token.match(/^(.*)[.:](\d{1,5})$/);
+      if (!m) continue;
+      const address = m[1];
+      const port = Number(m[2]);
+      if (!address || port === 0 || port > 65535) continue;
+      // Skip the foreign-address column (remote side of a socket).
+      if (/^\*\.\*$|^\*:\*$|:0$|\.\*$/.test(token)) continue;
+      sockets.push({ address, port });
+      break; // first address token on the line is the local address
+    }
+  }
+  return sockets;
+}
+
+function isLoopback(address) {
+  return LOOPBACK.test(address.replace(/^\[|\]$/g, ''));
+}
+
+/**
+ * Which of the known local-AI ports are listening on a non-loopback address?
+ * Returns labels like "Ollama (0.0.0.0:11434)".
+ */
+function exposedAiServices(sockets) {
+  const seen = new Set();
+  const found = [];
+  for (const { address, port } of sockets) {
+    const name = AI_SERVICE_PORTS[port];
+    if (!name || isLoopback(address)) continue;
+    const label = `${name} (${address}:${port})`;
+    if (!seen.has(label)) {
+      seen.add(label);
+      found.push(label);
+    }
+  }
+  return found;
+}
+
+function listeningSocketsCommand(platform) {
+  if (platform === 'win32') return [['netstat', ['-ano']]];
+  if (platform === 'darwin') return [['netstat', ['-an', '-p', 'tcp']]];
+  return [['ss', ['-ltnH']], ['netstat', ['-ltn']]];
+}
+
+/**
+ * Read-only: lists listening sockets via the platform's netstat/ss and maps
+ * them against AI_SERVICE_PORTS. If no command produces output the facts stay
+ * undefined and the rule reports unknown — never assumed safe.
+ */
+function probeAiServiceExposure(facts, platform = process.platform, runner = run) {
+  // A command that ran but printed nothing means "no listeners" — that is a
+  // pass. Only a command that could not run at all leaves the fact unknown.
+  let output;
+  for (const [cmd, args] of listeningSocketsCommand(platform)) {
+    output = runner(cmd, args);
+    if (output !== undefined) break;
+  }
+  if (output === undefined) return;
+  const exposed = exposedAiServices(parseListeningSockets(output));
+  facts.aiServiceExposed = exposed;
+  facts.aiServiceExposedCount = exposed.length;
+}
+
 /* ---------- Cross-platform probes ---------- */
 
 function probeCommon(facts) {
@@ -315,6 +438,7 @@ function probeCommon(facts) {
   facts.uptimeHours = Math.round((os.uptime() / 3600) * 10) / 10;
   probeLeftoverCredentials(facts);
   probeAgentToolConfigs(facts);
+  probeAiServiceExposure(facts);
 }
 
 /**
@@ -340,6 +464,12 @@ module.exports = {
   probeSessionRestore,
   probeLeftoverCredentials,
   probeAgentToolConfigs,
+  probeRecallSnapshotStore,
+  probeAiServiceExposure,
+  parseListeningSockets,
+  exposedAiServices,
   LEFTOVER_CREDENTIAL_CANDIDATES,
-  AGENT_TOOL_CONFIG_CANDIDATES
+  AGENT_TOOL_CONFIG_CANDIDATES,
+  AI_SERVICE_PORTS,
+  RECALL_SNAPSHOT_STORE
 };

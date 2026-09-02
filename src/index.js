@@ -5,6 +5,7 @@ const engine = require('./engine');
 const { gatherFacts } = require('./probes');
 const { loadDefaultRules, loadRulesFromFile } = require('./rules');
 const { renderText, renderJson, renderHtml } = require('./report');
+const { diffReports, renderDiffText } = require('./diff');
 const pkg = require('../package.json');
 
 /**
@@ -47,6 +48,8 @@ module.exports = {
   renderText,
   renderJson,
   renderHtml,
+  diffReports,
+  renderDiffText,
   engine,
   gatherFacts,
   loadDefaultRules,
