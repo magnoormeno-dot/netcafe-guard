@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const { scan, renderText, renderJson, renderHtml, loadDefaultRules, version } = require('../src');
+const { diffReports, renderDiffText } = require('../src/diff');
 const { loadRulesFromFile, declaredProfiles } = require('../src/rules');
 const { ruleAppliesToProfile } = require('../src/engine');
 
@@ -32,6 +33,10 @@ Usage:
   netcafe-guard scan [options]     Run the baseline scan on this machine
   netcafe-guard list-rules         Print the active ruleset (honours --rules
                                    and --profile)
+  netcafe-guard diff <before.json> <after.json>
+                                   Drift report between two --json scans of the
+                                   same machine. Exit code 3 if anything that
+                                   passed before fails now.
   netcafe-guard version            Print version
   netcafe-guard help               Show this help
 
@@ -57,6 +62,7 @@ Examples:
   netcafe-guard scan --html > report.html
   netcafe-guard scan --profile gaming-cafe --fail-under 80
   netcafe-guard scan --rules ./my-cafe-rules.json --all
+  netcafe-guard diff after-imaging.json now.json
 
 Read-only by design: netcafe-guard never changes the machine it audits.
 `;
@@ -131,6 +137,23 @@ function main() {
       if (result.summary.score < flags.failUnder) return 2;
     }
     return 0;
+  }
+
+  if (command === 'diff') {
+    const [beforeFile, afterFile] = positional.slice(1);
+    if (!beforeFile || !afterFile) {
+      process.stderr.write('netcafe-guard: diff needs two files: diff <before.json> <after.json>\n');
+      return 1;
+    }
+    const before = JSON.parse(fs.readFileSync(beforeFile, 'utf8'));
+    const after = JSON.parse(fs.readFileSync(afterFile, 'utf8'));
+    const diff = diffReports(before, after);
+    if (flags.json) {
+      process.stdout.write(JSON.stringify(diff, null, 2) + '\n');
+    } else {
+      process.stdout.write(renderDiffText(diff));
+    }
+    return diff.regressions.length ? 3 : 0;
   }
 
   process.stderr.write(`Unknown command: ${command}\n${HELP}`);

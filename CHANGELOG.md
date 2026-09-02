@@ -6,6 +6,23 @@ All notable changes to this project are documented here. Format loosely follows
 
 ## [Unreleased]
 
+### Added
+- **Network exposure of local AI model servers** — new rule
+  `ai-local-llm-not-exposed` (high, all platforms): Ollama, LM Studio, GPT4All,
+  Jan, KoboldCpp and Gradio-based UIs listening on a non-loopback address.
+  On a shared LAN an unauthenticated model server is free compute for anyone
+  on the network. Read-only probe over `netstat`/`ss`; generic ports are
+  deliberately excluded to avoid false positives.
+- **Leftover Recall snapshot store** — new rule `ai-no-recall-snapshot-store`
+  (high, win32): existence check on `%LOCALAPPDATA%\CoreAIPlatform.00\UKP`.
+  Disabling Recall by policy does not delete what it already captured.
+- **`netcafe-guard diff <before.json> <after.json>`** — drift report between
+  two `--json` scans: regressions (passed before, failing now), fixes, checks
+  that went unknown, rules added/removed. Exit code 3 on regressions, for
+  scheduled runs. `--json` for machines.
+- Gemini CLI OAuth token path in the credential watchlist (@adity982, #28).
+- 21 rules; 69 tests.
+
 ## [0.1.1] - 2026-08-18
 
 ### Added

@@ -4,8 +4,13 @@
     "title": "Session restore / write protection is active",
     "severity": "critical",
     "category": "multi-tenant",
-    "platforms": ["win32"],
-    "check": { "fact": "sessionRestoreActive", "operator": "isTrue" },
+    "platforms": [
+      "win32"
+    ],
+    "check": {
+      "fact": "sessionRestoreActive",
+      "operator": "isTrue"
+    },
     "remediation": "Install and enable a write filter or disk-restore agent (Windows Unified Write Filter, Deep Freeze, or your café management suite) so each tenant gets a clean machine. Without this, nothing else on a leased PC can be trusted between users — every other control can be undone by the previous tenant.",
     "reference": "docs/VISION.md — multi-tenant hygiene"
   },
@@ -14,8 +19,14 @@
     "title": "No leftover credential or AI agent key files in the home directory",
     "severity": "critical",
     "category": "multi-tenant",
-    "platforms": ["all"],
-    "check": { "fact": "leftoverCredentialCount", "operator": "lte", "value": 0 },
+    "platforms": [
+      "all"
+    ],
+    "check": {
+      "fact": "leftoverCredentialCount",
+      "operator": "lte",
+      "value": 0
+    },
     "remediation": "Remove SSH keys, cloud credentials, and AI agent/MCP config files from the shared profile, and wipe the profile between sessions. On a leased seat these are a free identity for the next tenant — an AI API key left behind bills someone else.",
     "reference": "docs/VISION.md — the AI you invited in is the exposure"
   },
@@ -24,8 +35,13 @@
     "title": "Screen recall / AI data analysis capture is disabled",
     "severity": "critical",
     "category": "ai-surface",
-    "platforms": ["win32"],
-    "check": { "fact": "recallDisabled", "operator": "isTrue" },
+    "platforms": [
+      "win32"
+    ],
+    "check": {
+      "fact": "recallDisabled",
+      "operator": "isTrue"
+    },
     "remediation": "Set DisableAIDataAnalysis to 1 under HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI. Periodic screenshots of everything on screen are catastrophic on a shared PC: the next tenant can page back through the previous one's banking or login session.",
     "reference": "Microsoft — Windows Recall policy (DisableAIDataAnalysis)"
   },
@@ -34,18 +50,43 @@
     "title": "Game DVR background recording is disabled",
     "severity": "high",
     "category": "ai-surface",
-    "platforms": ["win32"],
-    "check": { "fact": "gameDvrDisabled", "operator": "isTrue" },
+    "platforms": [
+      "win32"
+    ],
+    "check": {
+      "fact": "gameDvrDisabled",
+      "operator": "isTrue"
+    },
     "remediation": "Set AllowGameDVR to 0 under HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR. On a shared gaming PC, background capture can leave the previous tenant's screen recording available to the next tenant.",
     "reference": "Microsoft Learn — ApplicationManagement policy CSP (AllowGameDVR)"
+  },
+  {
+    "id": "ai-no-recall-snapshot-store",
+    "title": "No Recall snapshot store left on disk",
+    "severity": "high",
+    "category": "ai-surface",
+    "platforms": [
+      "win32"
+    ],
+    "check": {
+      "fact": "recallSnapshotStorePresent",
+      "operator": "isFalse"
+    },
+    "remediation": "Disabling Recall by policy does not delete what it already captured. Wipe %LOCALAPPDATA%\\CoreAIPlatform.00\\UKP as part of the between-tenant reset and confirm the restore/write-filter agent covers the user profile. Until it is gone, that folder is the previous tenant's screen, page by page.",
+    "reference": "Recall snapshot store location (%LOCALAPPDATA%\\CoreAIPlatform.00\\UKP); docs/VISION.md — AI surface area"
   },
   {
     "id": "ai-clipboard-history-disabled",
     "title": "Clipboard history is disabled",
     "severity": "high",
     "category": "ai-surface",
-    "platforms": ["win32"],
-    "check": { "fact": "clipboardHistoryDisabled", "operator": "isTrue" },
+    "platforms": [
+      "win32"
+    ],
+    "check": {
+      "fact": "clipboardHistoryDisabled",
+      "operator": "isTrue"
+    },
     "remediation": "Set AllowClipboardHistory to 0 under HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System. Clipboard history carries one tenant's copied password straight into the next tenant's session.",
     "reference": "CIS / Microsoft — Allow Clipboard History policy"
   },
@@ -54,8 +95,13 @@
     "title": "Cross-device clipboard sync is disabled",
     "severity": "medium",
     "category": "ai-surface",
-    "platforms": ["win32"],
-    "check": { "fact": "clipboardSyncDisabled", "operator": "isTrue" },
+    "platforms": [
+      "win32"
+    ],
+    "check": {
+      "fact": "clipboardSyncDisabled",
+      "operator": "isTrue"
+    },
     "remediation": "Set AllowCrossDeviceClipboard to 0. On a leased machine this pushes whatever a stranger copied off the device and into an account you do not control.",
     "reference": "Microsoft — Allow Cross Device Clipboard policy"
   },
@@ -64,8 +110,13 @@
     "title": "An explicit policy exists for the built-in AI assistant",
     "severity": "medium",
     "category": "ai-surface",
-    "platforms": ["win32"],
-    "check": { "fact": "copilotPolicySet", "operator": "isTrue" },
+    "platforms": [
+      "win32"
+    ],
+    "check": {
+      "fact": "copilotPolicySet",
+      "operator": "isTrue"
+    },
     "remediation": "Set TurnOffWindowsCopilot deliberately (either value) under the WindowsCopilot policy key. The finding here is the absence of a decision: an assistant with system reach on a machine shared by strangers should be allowed or denied on purpose, not inherited from the OS default.",
     "reference": "docs/VISION.md — AI surface area"
   },
@@ -74,18 +125,45 @@
     "title": "No leftover AI agent tool or MCP server configs in the home directory",
     "severity": "high",
     "category": "ai-surface",
-    "platforms": ["all"],
-    "check": { "fact": "agentToolConfigCount", "operator": "lte", "value": 0 },
+    "platforms": [
+      "all"
+    ],
+    "check": {
+      "fact": "agentToolConfigCount",
+      "operator": "lte",
+      "value": 0
+    },
     "remediation": "Remove agent tool and MCP server configuration files (claude_desktop_config.json, .cursor/mcp.json, .codex/config.toml, ...) from the shared profile and wipe the profile between sessions. These files map exactly which tools and servers the previous tenant's agent could reach — often with tokens embedded in env blocks — and hand the next tenant a preconfigured, pre-approved agent.",
     "reference": "docs/VISION.md — AI surface area"
+  },
+  {
+    "id": "ai-local-llm-not-exposed",
+    "title": "Local AI model servers are not exposed to the network",
+    "severity": "high",
+    "category": "ai-surface",
+    "platforms": [
+      "all"
+    ],
+    "check": {
+      "fact": "aiServiceExposedCount",
+      "operator": "lte",
+      "value": 0
+    },
+    "remediation": "Bind local model servers to loopback only: OLLAMA_HOST=127.0.0.1 for Ollama, turn off 'Serve on local network' in LM Studio, --host 127.0.0.1 for Gradio/KoboldCpp/Jan — or block the port in the host firewall. Bound to every interface on a shared LAN, an unauthenticated model server is free compute for anyone on the network and lets a neighbour read prompts, pull or delete models, and reuse the previous tenant's setup.",
+    "reference": "Ollama FAQ — OLLAMA_HOST binding; docs/VISION.md — AI surface area"
   },
   {
     "id": "tenant-browser-password-saving-off",
     "title": "Browser password saving is disabled by policy",
     "severity": "high",
     "category": "multi-tenant",
-    "platforms": ["win32"],
-    "check": { "fact": "browserPasswordSavingDisabled", "operator": "isTrue" },
+    "platforms": [
+      "win32"
+    ],
+    "check": {
+      "fact": "browserPasswordSavingDisabled",
+      "operator": "isTrue"
+    },
     "remediation": "Set PasswordManagerEnabled to 0 in the Chrome and Edge policy keys. A saved password on a leased seat is handed to whoever sits down next.",
     "reference": "Chrome/Edge enterprise policy — PasswordManagerEnabled"
   },
@@ -94,8 +172,13 @@
     "title": "Automatic logon is disabled",
     "severity": "high",
     "category": "authentication",
-    "platforms": ["win32"],
-    "check": { "fact": "autoAdminLogon", "operator": "isFalse" },
+    "platforms": [
+      "win32"
+    ],
+    "check": {
+      "fact": "autoAdminLogon",
+      "operator": "isFalse"
+    },
     "remediation": "Set HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\AutoAdminLogon to 0. Auto-logon hands every walk-up user an authenticated desktop.",
     "reference": "CIS Microsoft Windows Benchmark — Interactive logon"
   },
@@ -104,8 +187,13 @@
     "title": "No cleartext logon password stored in the registry",
     "severity": "critical",
     "category": "authentication",
-    "platforms": ["win32"],
-    "check": { "fact": "defaultPasswordStored", "operator": "isFalse" },
+    "platforms": [
+      "win32"
+    ],
+    "check": {
+      "fact": "defaultPasswordStored",
+      "operator": "isFalse"
+    },
     "remediation": "Delete the DefaultPassword value under Winlogon. When auto-logon is configured this stores the account password in cleartext, readable by any local user.",
     "reference": "MS KB324737 — Turn on automatic logon"
   },
@@ -114,8 +202,13 @@
     "title": "Built-in Guest account is disabled",
     "severity": "medium",
     "category": "accounts",
-    "platforms": ["win32"],
-    "check": { "fact": "guestAccountActive", "operator": "isFalse" },
+    "platforms": [
+      "win32"
+    ],
+    "check": {
+      "fact": "guestAccountActive",
+      "operator": "isFalse"
+    },
     "remediation": "Run: net user guest /active:no. The Guest account is a well-known anonymous access path.",
     "reference": "CIS — Accounts: Guest account status"
   },
@@ -124,8 +217,13 @@
     "title": "Inbound Remote Desktop is disabled",
     "severity": "high",
     "category": "remote-access",
-    "platforms": ["win32"],
-    "check": { "fact": "rdpEnabled", "operator": "isFalse" },
+    "platforms": [
+      "win32"
+    ],
+    "check": {
+      "fact": "rdpEnabled",
+      "operator": "isFalse"
+    },
     "remediation": "A public terminal should not accept inbound RDP. Set fDenyTSConnections to 1 unless remote management is genuinely required (then restrict by firewall).",
     "reference": "CIS — Remote Desktop Services"
   },
@@ -134,8 +232,13 @@
     "title": "Autorun/AutoPlay is disabled on all drive types",
     "severity": "high",
     "category": "removable-media",
-    "platforms": ["win32"],
-    "check": { "fact": "autorunDisabledAllDrives", "operator": "isTrue" },
+    "platforms": [
+      "win32"
+    ],
+    "check": {
+      "fact": "autorunDisabledAllDrives",
+      "operator": "isTrue"
+    },
     "remediation": "Set NoDriveTypeAutoRun to 0xFF (255). USB autorun is a classic infection vector in shared-PC venues.",
     "reference": "CIS — Autoplay Policies"
   },
@@ -144,8 +247,13 @@
     "title": "Windows Firewall is enabled for all profiles",
     "severity": "high",
     "category": "network",
-    "platforms": ["win32"],
-    "check": { "fact": "firewallAllProfilesOn", "operator": "isTrue" },
+    "platforms": [
+      "win32"
+    ],
+    "check": {
+      "fact": "firewallAllProfilesOn",
+      "operator": "isTrue"
+    },
     "remediation": "Run: netsh advfirewall set allprofiles state on.",
     "reference": "CIS — Windows Firewall with Advanced Security"
   },
@@ -154,8 +262,13 @@
     "title": "Microsoft Defender real-time protection is on",
     "severity": "high",
     "category": "malware",
-    "platforms": ["win32"],
-    "check": { "fact": "defenderRealtimeEnabled", "operator": "isTrue" },
+    "platforms": [
+      "win32"
+    ],
+    "check": {
+      "fact": "defenderRealtimeEnabled",
+      "operator": "isTrue"
+    },
     "remediation": "Re-enable real-time protection, or confirm a supported third-party AV is active. Shared PCs see constant untrusted files and downloads.",
     "reference": "CIS — Microsoft Defender Antivirus"
   },
@@ -164,9 +277,17 @@
     "title": "Screen auto-lock is enabled (idle timeout set)",
     "severity": "medium",
     "category": "session",
-    "platforms": ["win32"],
-    "profiles": ["shared-office"],
-    "check": { "fact": "screenLockTimeoutSec", "operator": "gte", "value": 60 },
+    "platforms": [
+      "win32"
+    ],
+    "profiles": [
+      "shared-office"
+    ],
+    "check": {
+      "fact": "screenLockTimeoutSec",
+      "operator": "gte",
+      "value": 60
+    },
     "remediation": "Set a screen-saver idle timeout so abandoned sessions lock. A value of 0 means the session never locks on its own.",
     "reference": "CIS — Interactive logon: Machine inactivity limit"
   },
@@ -175,9 +296,17 @@
     "title": "Screen auto-lock timeout is 15 minutes or less",
     "severity": "low",
     "category": "session",
-    "platforms": ["win32"],
-    "profiles": ["shared-office"],
-    "check": { "fact": "screenLockTimeoutSec", "operator": "lte", "value": 900 },
+    "platforms": [
+      "win32"
+    ],
+    "profiles": [
+      "shared-office"
+    ],
+    "check": {
+      "fact": "screenLockTimeoutSec",
+      "operator": "lte",
+      "value": 900
+    },
     "remediation": "Reduce the idle timeout to 900 seconds or less so abandoned sessions lock promptly.",
     "reference": "CIS — Interactive logon: Machine inactivity limit"
   },
@@ -186,9 +315,16 @@
     "title": "Password is required when the screen resumes",
     "severity": "medium",
     "category": "session",
-    "platforms": ["win32"],
-    "profiles": ["shared-office"],
-    "check": { "fact": "screenLockOnResume", "operator": "isTrue" },
+    "platforms": [
+      "win32"
+    ],
+    "profiles": [
+      "shared-office"
+    ],
+    "check": {
+      "fact": "screenLockOnResume",
+      "operator": "isTrue"
+    },
     "remediation": "Enable 'On resume, display logon screen' so the lock actually requires re-authentication.",
     "reference": "CIS — Screen saver: password protect"
   }
