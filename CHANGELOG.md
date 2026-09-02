@@ -6,6 +6,8 @@ All notable changes to this project are documented here. Format loosely follows
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-02
+
 ### Added
 - **Network exposure of local AI model servers** — new rule
   `ai-local-llm-not-exposed` (high, all platforms): Ollama, LM Studio, GPT4All,
