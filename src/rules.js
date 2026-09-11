@@ -10,6 +10,8 @@ const path = require('path');
  */
 
 const VALID_SEVERITIES = ['critical', 'high', 'medium', 'low', 'info'];
+const FIX_TYPES = ['registry', 'registry-delete', 'command'];
+
 const VALID_OPERATORS = [
   'equals',
   'notEquals',
@@ -53,6 +55,33 @@ function validateRule(rule, index) {
   }
   if (rule.platforms && !Array.isArray(rule.platforms)) {
     problems.push(`${where}: "platforms" must be an array`);
+  }
+  if (rule.fix !== undefined) {
+    const steps = Array.isArray(rule.fix) ? rule.fix : [rule.fix];
+    if (!steps.length) problems.push(`${where}: "fix" must not be empty`);
+    for (const step of steps) {
+      if (!step || typeof step !== 'object') {
+        problems.push(`${where}: each "fix" step must be an object`);
+        continue;
+      }
+      if (!FIX_TYPES.includes(step.type)) {
+        problems.push(`${where}: "fix.type" must be one of ${FIX_TYPES.join(', ')}`);
+        continue;
+      }
+      if (step.type === 'command') {
+        if (typeof step.run !== 'string' || !step.run) problems.push(`${where}: "fix.run" must be a non-empty string`);
+        continue;
+      }
+      for (const field of ['hive', 'path', 'name']) {
+        if (typeof step[field] !== 'string' || !step[field]) {
+          problems.push(`${where}: "fix.${field}" must be a non-empty string`);
+        }
+      }
+      if (step.type === 'registry') {
+        if (!['DWord', 'String'].includes(step.kind)) problems.push(`${where}: "fix.kind" must be DWord or String`);
+        if (step.data === undefined) problems.push(`${where}: "fix.data" is required`);
+      }
+    }
   }
   if (rule.profiles !== undefined) {
     if (!Array.isArray(rule.profiles) || rule.profiles.some((p) => typeof p !== 'string' || !p)) {
@@ -120,6 +149,7 @@ function loadDefaultRules() {
 module.exports = {
   VALID_SEVERITIES,
   VALID_OPERATORS,
+  FIX_TYPES,
   validateRule,
   validateRules,
   declaredProfiles,

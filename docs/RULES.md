@@ -17,6 +17,7 @@ expectation, the rule passes; otherwise it fails.
 | `check` | yes | `{ "fact": "...", "operator": "...", "value": ... }` |
 | `remediation` | recommended | Exactly what to run or click to fix it. This is the most valuable part for the person reading the report. |
 | `reference` | no | Where the rule comes from (CIS Benchmark, vendor doc, CVE). |
+| `fix` | no | Machine-readable remediation used by `scan --fix-script`. One step or an array of steps — see **Scriptable fixes** below. Omit it when the fix is destructive or needs judgement; the prose `remediation` is then emitted as a comment instead. |
 
 ## Operators
 
@@ -89,6 +90,43 @@ distinctive to one AI serving tool and cite its documentation.
 for **existence** and never read the contents of a credential or config file —
 a scanner that slurped secrets would itself be the leak. Keep any new probe of
 this kind to the same standard.
+
+## Scriptable fixes
+
+`remediation` tells a person what to do. `fix` tells `scan --fix-script` how to
+write it as PowerShell — and that script is only ever **printed**, never run.
+
+```json
+"fix": {
+  "type": "registry",
+  "hive": "HKLM",
+  "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI",
+  "name": "DisableAIDataAnalysis",
+  "kind": "DWord",
+  "data": 1
+}
+```
+
+Three step types:
+
+| `type` | Fields | Emits |
+| --- | --- | --- |
+| `registry` | `hive`, `path`, `name`, `kind` (`DWord`\|`String`), `data` | creates the key if missing, then sets the value |
+| `registry-delete` | `hive`, `path`, `name` | removes that one value |
+| `command` | `run` | the command verbatim |
+
+Use an array for a fix that needs several steps (e.g. Chrome *and* Edge policy).
+An optional `note` on a step becomes a comment above it.
+
+**When not to add a `fix`.** If the remediation deletes a tenant's files,
+installs software, or reconfigures a service, leave `fix` out. Those findings
+are printed as `MANUAL` comment blocks carrying the prose remediation, which is
+exactly where a decision like "wipe this profile" belongs. Five baseline rules
+are deliberately in that group.
+
+Only **failed** checks are scripted. An `unknown` result never produces a
+command: the scanner could not read the setting, so writing a value there would
+hide a visibility problem instead of fixing it.
 
 ## Profiles
 

@@ -93,6 +93,8 @@ netcafe-guard scan --fail-under 80    # exit non-zero below a score — for CI /
 netcafe-guard scan --rules ./cafe.json  # your own ruleset
 netcafe-guard list-rules              # what does the baseline check?
 netcafe-guard diff before.json after.json  # what drifted between two --json scans (exit 3 on regressions)
+netcafe-guard scan --fix-script > fix.ps1  # reviewable remediation script — nothing is executed
+netcafe-guard fleet ./reports         # one venue, many seats: what's broken across the floor
 ```
 
 Run it after imaging a machine, after any config change, and on a schedule
@@ -104,6 +106,45 @@ netcafe-guard scan --json > golden.json        # right after imaging
 netcafe-guard scan --json > now.json           # later, from the scheduler
 netcafe-guard diff golden.json now.json        # regressions, fixes, checks gone unknown
 ```
+
+### A whole venue, not one seat
+
+A café runs dozens of identical-looking machines, and reading fifty reports one
+by one is how drift gets missed. Scan each seat to JSON, then aggregate:
+
+```bash
+netcafe-guard fleet ./reports --fail-under 70
+```
+
+```
+  Score  worst 0  ·  median 10  ·  mean 14  ·  best 100
+  Grades A:1  F:11
+
+  FAILING ACROSS THE FLEET
+    11 seats ( 92%)  [critical] ai-recall-disabled     Screen recall / AI data analysis capture is disabled
+     2 seats ( 17%)  [high]     ai-local-llm-not-exposed  Local AI model servers are not exposed to the network
+     1 seat  (  8%)  [high]     win-rdp-disabled       Inbound Remote Desktop is disabled
+```
+
+A control failing on 92% of seats is an imaging problem; one failing on a single
+seat is that seat. The summary separates them, lists the worst seats, keeps
+`unknown` in its own section, and exits non-zero when any seat is below
+`--fail-under`.
+
+### Fixing what it finds
+
+The scanner never changes the machine — but it will write you the script:
+
+```bash
+netcafe-guard scan --fix-script > fix.ps1   # read it, then run it yourself as admin
+```
+
+Only checks that **failed** produce commands: `unknown` means "go look", not
+"overwrite it". Remediations that delete a tenant's files, install software or
+reconfigure a service are deliberately left as comments — a generated script is
+the wrong place for `rm -rf` on somebody's profile. Rules carry the machine-
+readable part in an optional `fix` field, so a new rule can ship its own
+one-line remediation (see [`docs/RULES.md`](docs/RULES.md)).
 
 ### Scores
 
@@ -175,6 +216,8 @@ and running without `--profile` always evaluates the full baseline.
 - [ ] Linux and macOS baselines (shared library terminals, Mac kiosks)
 - [x] `--profile gaming-cafe` vs `--profile shared-office` rule sets
 - [x] HTML report output for handing to a non-technical owner (`--html`)
+- [x] Fleet view across many seats (`netcafe-guard fleet`)
+- [x] Reviewable remediation script export (`scan --fix-script`)
 - [ ] Localised remediation text (zh first)
 
 ## Contributing
