@@ -6,6 +6,8 @@ All notable changes to this project are documented here. Format loosely follows
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-09-11
+
 ### Added
 - **`netcafe-guard fleet <paths...>`** — one venue, many seats. Aggregates any
   number of `scan --json` reports (files or a directory) into what an operator
