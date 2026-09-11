@@ -6,6 +6,26 @@ All notable changes to this project are documented here. Format loosely follows
 
 ## [Unreleased]
 
+### Added
+- **`netcafe-guard fleet <paths...>`** — one venue, many seats. Aggregates any
+  number of `scan --json` reports (files or a directory) into what an operator
+  actually asks: which control is broken across the floor (with seat counts and
+  percentages), which seats are worst, and what came back `unknown`. Re-scans of
+  the same host collapse to the newest; non-reports are named, not silently
+  counted. `--json` for machines, `--fail-under N` exits 2 when any seat is below
+  the threshold.
+- **`scan --fix-script`** — prints a PowerShell remediation script for the checks
+  that failed. The scanner still never touches the machine: it writes a script a
+  human reviews and runs. Only failures are scripted (`unknown` means "go look",
+  not "overwrite it"), and destructive remediations — deleting a tenant's files,
+  installing software, reconfiguring a service — are deliberately emitted as
+  `MANUAL` comments instead of commands.
+- Rules gained an optional machine-readable `fix` field (`registry`,
+  `registry-delete` or `command` steps, single or array) backing the script
+  export, with validator support. 16 of the 21 baseline rules ship one; the other
+  five are intentionally manual.
+- 15 further tests (84 total).
+
 ## [0.1.2] - 2026-09-02
 
 ### Added

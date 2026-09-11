@@ -6,6 +6,8 @@ const { gatherFacts } = require('./probes');
 const { loadDefaultRules, loadRulesFromFile } = require('./rules');
 const { renderText, renderJson, renderHtml } = require('./report');
 const { diffReports, renderDiffText } = require('./diff');
+const { aggregateFleet, renderFleetText } = require('./fleet');
+const { buildFixScript } = require('./fixscript');
 const pkg = require('../package.json');
 
 /**
@@ -50,6 +52,9 @@ module.exports = {
   renderHtml,
   diffReports,
   renderDiffText,
+  aggregateFleet,
+  renderFleetText,
+  buildFixScript,
   engine,
   gatherFacts,
   loadDefaultRules,

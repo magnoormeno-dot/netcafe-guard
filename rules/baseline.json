@@ -43,7 +43,15 @@
       "operator": "isTrue"
     },
     "remediation": "Set DisableAIDataAnalysis to 1 under HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI. Periodic screenshots of everything on screen are catastrophic on a shared PC: the next tenant can page back through the previous one's banking or login session.",
-    "reference": "Microsoft — Windows Recall policy (DisableAIDataAnalysis)"
+    "reference": "Microsoft — Windows Recall policy (DisableAIDataAnalysis)",
+    "fix": {
+      "type": "registry",
+      "hive": "HKLM",
+      "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI",
+      "name": "DisableAIDataAnalysis",
+      "kind": "DWord",
+      "data": 1
+    }
   },
   {
     "id": "capture-gamedvr-disabled",
@@ -58,7 +66,15 @@
       "operator": "isTrue"
     },
     "remediation": "Set AllowGameDVR to 0 under HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR. On a shared gaming PC, background capture can leave the previous tenant's screen recording available to the next tenant.",
-    "reference": "Microsoft Learn — ApplicationManagement policy CSP (AllowGameDVR)"
+    "reference": "Microsoft Learn — ApplicationManagement policy CSP (AllowGameDVR)",
+    "fix": {
+      "type": "registry",
+      "hive": "HKLM",
+      "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR",
+      "name": "AllowGameDVR",
+      "kind": "DWord",
+      "data": 0
+    }
   },
   {
     "id": "ai-no-recall-snapshot-store",
@@ -88,7 +104,15 @@
       "operator": "isTrue"
     },
     "remediation": "Set AllowClipboardHistory to 0 under HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System. Clipboard history carries one tenant's copied password straight into the next tenant's session.",
-    "reference": "CIS / Microsoft — Allow Clipboard History policy"
+    "reference": "CIS / Microsoft — Allow Clipboard History policy",
+    "fix": {
+      "type": "registry",
+      "hive": "HKLM",
+      "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+      "name": "AllowClipboardHistory",
+      "kind": "DWord",
+      "data": 0
+    }
   },
   {
     "id": "ai-clipboard-sync-disabled",
@@ -103,7 +127,15 @@
       "operator": "isTrue"
     },
     "remediation": "Set AllowCrossDeviceClipboard to 0. On a leased machine this pushes whatever a stranger copied off the device and into an account you do not control.",
-    "reference": "Microsoft — Allow Cross Device Clipboard policy"
+    "reference": "Microsoft — Allow Cross Device Clipboard policy",
+    "fix": {
+      "type": "registry",
+      "hive": "HKLM",
+      "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+      "name": "AllowCrossDeviceClipboard",
+      "kind": "DWord",
+      "data": 0
+    }
   },
   {
     "id": "ai-assistant-policy-set",
@@ -118,7 +150,16 @@
       "operator": "isTrue"
     },
     "remediation": "Set TurnOffWindowsCopilot deliberately (either value) under the WindowsCopilot policy key. The finding here is the absence of a decision: an assistant with system reach on a machine shared by strangers should be allowed or denied on purpose, not inherited from the OS default.",
-    "reference": "docs/VISION.md — AI surface area"
+    "reference": "docs/VISION.md — AI surface area",
+    "fix": {
+      "type": "registry",
+      "hive": "HKLM",
+      "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot",
+      "name": "TurnOffWindowsCopilot",
+      "kind": "DWord",
+      "data": 1,
+      "note": "Either value satisfies the rule — the finding is the absence of a decision. This script writes 1 (assistant off), the conservative choice for a seat used by strangers; write 0 instead if your venue deliberately offers it."
+    }
   },
   {
     "id": "ai-no-leftover-agent-configs",
@@ -165,7 +206,25 @@
       "operator": "isTrue"
     },
     "remediation": "Set PasswordManagerEnabled to 0 in the Chrome and Edge policy keys. A saved password on a leased seat is handed to whoever sits down next.",
-    "reference": "Chrome/Edge enterprise policy — PasswordManagerEnabled"
+    "reference": "Chrome/Edge enterprise policy — PasswordManagerEnabled",
+    "fix": [
+      {
+        "type": "registry",
+        "hive": "HKLM",
+        "path": "SOFTWARE\\Policies\\Google\\Chrome",
+        "name": "PasswordManagerEnabled",
+        "kind": "DWord",
+        "data": 0
+      },
+      {
+        "type": "registry",
+        "hive": "HKLM",
+        "path": "SOFTWARE\\Policies\\Microsoft\\Edge",
+        "name": "PasswordManagerEnabled",
+        "kind": "DWord",
+        "data": 0
+      }
+    ]
   },
   {
     "id": "win-autologon-disabled",
@@ -180,7 +239,15 @@
       "operator": "isFalse"
     },
     "remediation": "Set HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\AutoAdminLogon to 0. Auto-logon hands every walk-up user an authenticated desktop.",
-    "reference": "CIS Microsoft Windows Benchmark — Interactive logon"
+    "reference": "CIS Microsoft Windows Benchmark — Interactive logon",
+    "fix": {
+      "type": "registry",
+      "hive": "HKLM",
+      "path": "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon",
+      "name": "AutoAdminLogon",
+      "kind": "String",
+      "data": "0"
+    }
   },
   {
     "id": "win-no-stored-password",
@@ -195,7 +262,14 @@
       "operator": "isFalse"
     },
     "remediation": "Delete the DefaultPassword value under Winlogon. When auto-logon is configured this stores the account password in cleartext, readable by any local user.",
-    "reference": "MS KB324737 — Turn on automatic logon"
+    "reference": "MS KB324737 — Turn on automatic logon",
+    "fix": {
+      "type": "registry-delete",
+      "hive": "HKLM",
+      "path": "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon",
+      "name": "DefaultPassword",
+      "note": "Removes the cleartext password value only; no account is changed."
+    }
   },
   {
     "id": "win-guest-disabled",
@@ -210,7 +284,11 @@
       "operator": "isFalse"
     },
     "remediation": "Run: net user guest /active:no. The Guest account is a well-known anonymous access path.",
-    "reference": "CIS — Accounts: Guest account status"
+    "reference": "CIS — Accounts: Guest account status",
+    "fix": {
+      "type": "command",
+      "run": "net user guest /active:no"
+    }
   },
   {
     "id": "win-rdp-disabled",
@@ -225,7 +303,15 @@
       "operator": "isFalse"
     },
     "remediation": "A public terminal should not accept inbound RDP. Set fDenyTSConnections to 1 unless remote management is genuinely required (then restrict by firewall).",
-    "reference": "CIS — Remote Desktop Services"
+    "reference": "CIS — Remote Desktop Services",
+    "fix": {
+      "type": "registry",
+      "hive": "HKLM",
+      "path": "SYSTEM\\CurrentControlSet\\Control\\Terminal Server",
+      "name": "fDenyTSConnections",
+      "kind": "DWord",
+      "data": 1
+    }
   },
   {
     "id": "win-autorun-disabled",
@@ -240,7 +326,15 @@
       "operator": "isTrue"
     },
     "remediation": "Set NoDriveTypeAutoRun to 0xFF (255). USB autorun is a classic infection vector in shared-PC venues.",
-    "reference": "CIS — Autoplay Policies"
+    "reference": "CIS — Autoplay Policies",
+    "fix": {
+      "type": "registry",
+      "hive": "HKLM",
+      "path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer",
+      "name": "NoDriveTypeAutoRun",
+      "kind": "DWord",
+      "data": 255
+    }
   },
   {
     "id": "win-firewall-on",
@@ -255,7 +349,11 @@
       "operator": "isTrue"
     },
     "remediation": "Run: netsh advfirewall set allprofiles state on.",
-    "reference": "CIS — Windows Firewall with Advanced Security"
+    "reference": "CIS — Windows Firewall with Advanced Security",
+    "fix": {
+      "type": "command",
+      "run": "netsh advfirewall set allprofiles state on"
+    }
   },
   {
     "id": "win-defender-realtime",
@@ -270,7 +368,12 @@
       "operator": "isTrue"
     },
     "remediation": "Re-enable real-time protection, or confirm a supported third-party AV is active. Shared PCs see constant untrusted files and downloads.",
-    "reference": "CIS — Microsoft Defender Antivirus"
+    "reference": "CIS — Microsoft Defender Antivirus",
+    "fix": {
+      "type": "command",
+      "run": "Set-MpPreference -DisableRealtimeMonitoring $false",
+      "note": "Skip this if a supported third-party AV owns real-time protection on these seats."
+    }
   },
   {
     "id": "win-screenlock-enabled",
@@ -289,7 +392,25 @@
       "value": 60
     },
     "remediation": "Set a screen-saver idle timeout so abandoned sessions lock. A value of 0 means the session never locks on its own.",
-    "reference": "CIS — Interactive logon: Machine inactivity limit"
+    "reference": "CIS — Interactive logon: Machine inactivity limit",
+    "fix": [
+      {
+        "type": "registry",
+        "hive": "HKCU",
+        "path": "Control Panel\\Desktop",
+        "name": "ScreenSaveActive",
+        "kind": "String",
+        "data": "1"
+      },
+      {
+        "type": "registry",
+        "hive": "HKCU",
+        "path": "Control Panel\\Desktop",
+        "name": "ScreenSaveTimeOut",
+        "kind": "String",
+        "data": "600"
+      }
+    ]
   },
   {
     "id": "win-screenlock-max",
@@ -308,7 +429,15 @@
       "value": 900
     },
     "remediation": "Reduce the idle timeout to 900 seconds or less so abandoned sessions lock promptly.",
-    "reference": "CIS — Interactive logon: Machine inactivity limit"
+    "reference": "CIS — Interactive logon: Machine inactivity limit",
+    "fix": {
+      "type": "registry",
+      "hive": "HKCU",
+      "path": "Control Panel\\Desktop",
+      "name": "ScreenSaveTimeOut",
+      "kind": "String",
+      "data": "900"
+    }
   },
   {
     "id": "win-screenlock-secure",
@@ -326,6 +455,14 @@
       "operator": "isTrue"
     },
     "remediation": "Enable 'On resume, display logon screen' so the lock actually requires re-authentication.",
-    "reference": "CIS — Screen saver: password protect"
+    "reference": "CIS — Screen saver: password protect",
+    "fix": {
+      "type": "registry",
+      "hive": "HKCU",
+      "path": "Control Panel\\Desktop",
+      "name": "ScreenSaverIsSecure",
+      "kind": "String",
+      "data": "1"
+    }
   }
 ]

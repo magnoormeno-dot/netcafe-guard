@@ -4,6 +4,9 @@
 const fs = require('fs');
 const { scan, renderText, renderJson, renderHtml, loadDefaultRules, version } = require('../src');
 const { diffReports, renderDiffText } = require('../src/diff');
+const { aggregateFleet, renderFleetText } = require('../src/fleet');
+const { buildFixScript } = require('../src/fixscript');
+const path = require('path');
 const { loadRulesFromFile, declaredProfiles } = require('../src/rules');
 const { ruleAppliesToProfile } = require('../src/engine');
 
@@ -37,6 +40,9 @@ Usage:
                                    Drift report between two --json scans of the
                                    same machine. Exit code 3 if anything that
                                    passed before fails now.
+  netcafe-guard fleet <paths...>   Summarise many --json reports (files or a
+                                   directory): which control is broken across
+                                   the floor, and which seats are worst.
   netcafe-guard version            Print version
   netcafe-guard help               Show this help
 
@@ -44,6 +50,10 @@ Scan options:
   --json                 Output machine-readable JSON
   --html                 Output a standalone HTML report — hand it to the
                          venue owner: scan --html > report.html
+  --fix-script           Print a PowerShell remediation script for the checks
+                         that FAILED. Nothing is executed: review it, then run
+                         it yourself as administrator. Destructive fixes (files
+                         to delete, software to install) are left as comments.
   --all                  Show every check, including passes and skips
   --no-color             Disable ANSI colors
   --rules <file>         Use a custom ruleset (JSON)
@@ -63,6 +73,8 @@ Examples:
   netcafe-guard scan --profile gaming-cafe --fail-under 80
   netcafe-guard scan --rules ./my-cafe-rules.json --all
   netcafe-guard diff after-imaging.json now.json
+  netcafe-guard scan --fix-script > fix.ps1
+  netcafe-guard fleet ./reports --fail-under 70
 
 Read-only by design: netcafe-guard never changes the machine it audits.
 `;
@@ -73,6 +85,7 @@ function parseArgs(argv) {
     const a = argv[i];
     if (a === '--json') args.flags.json = true;
     else if (a === '--html') args.flags.html = true;
+    else if (a === '--fix-script') args.flags.fixScript = true;
     else if (a === '--all') args.flags.all = true;
     else if (a === '--no-color') args.flags.color = false;
     else if (a === '--rules') args.flags.rules = argv[++i];
@@ -112,8 +125,9 @@ function main() {
   }
 
   if (command === 'scan') {
-    if (flags.json && flags.html) {
-      process.stderr.write('netcafe-guard: choose one output format — --json or --html\n');
+    const formats = ['json', 'html', 'fixScript'].filter((f) => flags[f]);
+    if (formats.length > 1) {
+      process.stderr.write('netcafe-guard: choose one output format — --json, --html or --fix-script\n');
       return 1;
     }
 
@@ -129,6 +143,14 @@ function main() {
       process.stdout.write(renderJson(result) + '\n');
     } else if (flags.html) {
       process.stdout.write(renderHtml(result));
+    } else if (flags.fixScript) {
+      const { script, scripted, manual } = buildFixScript(result, opts.rules);
+      process.stdout.write(script);
+      // Summary on stderr so `> fix.ps1` stays a clean script.
+      process.stderr.write(
+        `netcafe-guard: ${scripted.length} scripted fix(es), ${manual.length} needing manual work` +
+        (manual.length ? ` (${manual.join(', ')})` : '') + '\n'
+      );
     } else {
       process.stdout.write(renderText(result, { color: flags.color, all: flags.all }));
     }
@@ -154,6 +176,54 @@ function main() {
       process.stdout.write(renderDiffText(diff));
     }
     return diff.regressions.length ? 3 : 0;
+  }
+
+  if (command === 'fleet') {
+    const targets = positional.slice(1);
+    if (!targets.length) {
+      process.stderr.write('netcafe-guard: fleet needs report files or a directory: fleet <paths...>\n');
+      return 1;
+    }
+
+    const files = [];
+    for (const target of targets) {
+      const stat = fs.statSync(target);
+      if (stat.isDirectory()) {
+        for (const entry of fs.readdirSync(target).sort()) {
+          if (entry.toLowerCase().endsWith('.json')) files.push(path.join(target, entry));
+        }
+      } else {
+        files.push(target);
+      }
+    }
+
+    const inputs = files.map((file) => {
+      try {
+        return { label: file, report: JSON.parse(fs.readFileSync(file, 'utf8')) };
+      } catch (_err) {
+        return { label: file, report: null };
+      }
+    });
+
+    const agg = aggregateFleet(inputs);
+    if (flags.json) {
+      process.stdout.write(JSON.stringify(agg, null, 2) + '\n');
+    } else {
+      process.stdout.write(renderFleetText(agg));
+    }
+
+    if (typeof flags.failUnder === 'number' && !Number.isNaN(flags.failUnder)) {
+      const below = agg.seats.filter((s) => s.score !== null && s.score < flags.failUnder);
+      if (below.length) {
+        process.stderr.write(
+          `netcafe-guard: ${below.length} seat(s) below ${flags.failUnder}: ` +
+          below.slice(0, 10).map((s) => s.hostname).join(', ') +
+          (below.length > 10 ? ', …' : '') + '\n'
+        );
+        return 2;
+      }
+    }
+    return 0;
   }
 
   process.stderr.write(`Unknown command: ${command}\n${HELP}`);
