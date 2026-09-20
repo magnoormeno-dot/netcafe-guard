@@ -23,6 +23,19 @@ All notable changes to this project are documented here. Format loosely follows
   human review). Offline-testable: `--dry-run` prints exactly what would be
   sent and sends nothing; the scanner's verdict is never delegated. The core
   package stays zero-dependency.
+- A manual `Jev triage smoke test` workflow (`workflow_dispatch`) that routes
+  the demo seat and a clean seat with a real Jev call using the
+  `TYPESAFE_API_KEY` repository secret, so nobody handles the key by hand.
+
+### Fixed
+- Jev example: the urgency rubric was a map keyed 0–3; the SDK requires a
+  list indexed by score, so every real call threw before a request was sent
+  while the dry run and offline tests passed. Found by installing the real
+  SDK (0.6.0). The example's tests now drive the real client through a
+  stubbed transport and check the request body and parsed answers; CI
+  installs the SDK for that one job. `decideWithJev` accepts SDK client
+  config (`fetch`, `apiKey`, `baseURL`, `timeout`) and results carry `model`,
+  `usage` and the route probabilities.
 
 ## [0.1.3] - 2026-09-11
 

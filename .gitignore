@@ -7,3 +7,4 @@ facts.json
 coverage/
 *.tgz
 .env
+examples/jev-triage/package-lock.json

@@ -40,7 +40,8 @@ test('question specs cover route, urgency and human review with the documented t
   assert.equal(triage.QUESTION_SPECS.route.type, 'choice');
   assert.deepEqual(Object.keys(triage.ROUTES), ['reimage', 'remote_fix', 'technician_visit', 'owner_decision', 'no_action']);
   assert.equal(triage.QUESTION_SPECS.urgency.type, 'score');
-  assert.deepEqual(Object.keys(triage.URGENCY), ['0', '1', '2', '3']);
+  assert.ok(Array.isArray(triage.URGENCY), 'a score rubric is a list indexed by score, never a map');
+  assert.equal(triage.URGENCY.length, 4);
   assert.equal(triage.QUESTION_SPECS.needs_human.type, 'noul');
 });
 
@@ -90,4 +91,109 @@ test('a real call without the SDK or key fails loudly instead of pretending', ()
     { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '' } });
   assert.equal(out.status, 1);
   assert.match(out.stderr, /not installed|TYPESAFE_API_KEY is not set|no reports to triage/);
+});
+
+/*
+ * The SDK's own rules for question builders, as of @typesafe-ai/sdk 0.6.0:
+ * choice() takes a map of labels, score() takes a LIST of at least two rubric
+ * entries indexed from zero, noul() takes a question. This fake enforces them so
+ * the contract is checked even where the SDK is not installed (the core
+ * package is zero-dependency). A map for a score rubric used to pass every
+ * offline test and then throw on the first real call.
+ */
+const strictSdk = {
+  choice(instructions, criteria) {
+    if (Array.isArray(criteria) || typeof criteria !== 'object' || criteria === null) throw new Error('Choice criteria must be a map');
+    return { type: 'choice', instructions, criteria };
+  },
+  score(instructions, criteria) {
+    if (!Array.isArray(criteria)) throw new Error('Score criteria must be a list of descriptions indexed by score from zero, not a map.');
+    if (criteria.length < 2) throw new Error('at least two scores are required');
+    return { type: 'score', instructions, criteria };
+  },
+  noul(instructions, criteria) {
+    return { type: 'noul', instructions, criteria };
+  }
+};
+
+test('buildQuestions satisfies the SDK builder contract: choice takes a map, score takes a list', () => {
+  const q = triage.buildQuestions(strictSdk);
+  assert.deepEqual(Object.keys(q), ['route', 'urgency', 'needs_human']);
+  assert.deepEqual(q.route.criteria, triage.ROUTES);
+  assert.deepEqual(q.urgency.criteria, triage.URGENCY);
+  assert.equal(q.urgency.criteria.length, 4);
+  assert.equal(q.needs_human.type, 'noul');
+  // What --dry-run prints is exactly what is sent.
+  assert.deepEqual(JSON.parse(JSON.stringify(q)), JSON.parse(JSON.stringify(triage.QUESTION_SPECS)));
+});
+
+function realSdk() {
+  try {
+    return require(require.resolve('@typesafe-ai/sdk', { paths: [path.dirname(TRIAGE)] }));
+  } catch (_err) {
+    return null;
+  }
+}
+
+test('with the real SDK and a stubbed transport, one seat goes over the wire and comes back as a queue', async (t) => {
+  const sdk = realSdk();
+  if (!sdk) {
+    t.skip('@typesafe-ai/sdk not installed — `npm install` in examples/jev-triage runs this (CI does)');
+    return;
+  }
+  const state = triage.buildState(demoReport());
+  const seen = [];
+  const reply = {
+    model: 'jev-latest',
+    answers: {
+      route: { type: 'choice', choice: 'technician_visit', confidence: 0.83,
+        probabilities: { reimage: 0.09, remote_fix: 0.05, technician_visit: 0.83, owner_decision: 0.02, no_action: 0.01 } },
+      urgency: { type: 'score', score: 2.7, confidence: 0.71, legend: {}, probabilities: { 0: 0.01, 1: 0.04, 2: 0.2, 3: 0.75 } },
+      needs_human: { type: 'noul', noul: 0.18 }
+    },
+    usage: { input_tokens: 812, output_tokens: 0 }
+  };
+  const fetch = async (url, init) => {
+    seen.push({ url: String(url), method: init.method, headers: new Headers(init.headers), body: JSON.parse(init.body) });
+    return new Response(JSON.stringify(reply), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+
+  const results = await triage.decideWithJev([state], triage.DEFAULTS, { apiKey: 'test-only-not-a-real-key', fetch });
+
+  assert.equal(seen.length, 1);
+  const req = seen[0];
+  assert.equal(req.method, 'POST');
+  assert.match(req.url, /\/v1\/systemone$/);
+  assert.equal(req.body.model, 'jev-latest');
+  assert.deepEqual(req.body.state, JSON.parse(JSON.stringify(state)));
+  assert.ok(Array.isArray(req.body.questions.urgency.criteria), 'the score rubric crosses the wire as a list');
+  assert.deepEqual(req.body.questions.route.criteria, triage.ROUTES);
+  assert.equal(req.body.questions.needs_human.type, 'noul');
+  // The key rides in the Authorization header and nowhere else.
+  assert.match(req.headers.get('authorization'), /^Bearer /);
+  assert.doesNotMatch(JSON.stringify(req.body), /test-only-not-a-real-key/);
+
+  assert.equal(results.length, 1);
+  assert.equal(results[0].hostname, 'CAFE-PC-07');
+  assert.equal(results[0].queue, 'technician_visit');
+  assert.equal(results[0].urgency, 3);
+  assert.equal(results[0].needsHuman, 0.18);
+  assert.equal(results[0].model, 'jev-latest');
+  assert.equal(results[0].usage.input_tokens, 812);
+  assert.match(triage.renderText(results), /CAFE-PC-07\s+→ technician_visit\s+urgency 3/);
+});
+
+test('with the real SDK, a real call still refuses to run without a key', async (t) => {
+  const sdk = realSdk();
+  if (!sdk) {
+    t.skip('@typesafe-ai/sdk not installed');
+    return;
+  }
+  const saved = process.env.TYPESAFE_API_KEY;
+  delete process.env.TYPESAFE_API_KEY;
+  try {
+    await assert.rejects(() => triage.decideWithJev([triage.buildState(demoReport())]), /TYPESAFE_API_KEY is not set/);
+  } finally {
+    if (saved !== undefined) process.env.TYPESAFE_API_KEY = saved;
+  }
 });

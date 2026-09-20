@@ -43,6 +43,13 @@ node triage.js ../../reports/ --dry-run  # print exactly what would be sent, sen
 Run `--dry-run` first. It prints the full payload — the per-seat `state` and
 the questions — and contacts nothing.
 
+To run a **real** call without handling the key on a workstation, add
+`TYPESAFE_API_KEY` as a repository secret and dispatch the
+[`Jev triage smoke test`](../../.github/workflows/jev-smoke.yml) workflow
+(Actions → *Jev triage smoke test* → *Run workflow*). It scans the demo seat
+and a clean seat, prints the dry run, then routes both with Jev. The key stays
+in GitHub's secret store; nothing in this example ever prints it.
+
 ## What leaves the machine
 
 Only the summary that `buildState()` builds from the report: hostname, platform,
@@ -60,9 +67,17 @@ Taken from the official SDK source on 2026-09-20 — verify against
 - Package `@typesafe-ai/sdk` (MIT, Node ≥ 20); auth via `TYPESAFE_API_KEY`;
   endpoint `POST https://api.typesafe.ai/v1/systemone`; default model `jev-latest`.
 - `client.systemOne({ state, questions })` returns `{ answers, model, usage }`.
+- `choice(instructions, criteria)` takes a **map** of labels to descriptions;
+  `score(instructions, criteria)` takes a **list** of at least two rubric
+  entries indexed by score from zero — the SDK throws on a map, before any
+  request is sent. `noul(instructions)` takes the question.
 - `choice(...)` answers carry `choice`, `confidence`, `probabilities`;
   `score(...)` answers carry `score`, `confidence`, `legend`, `probabilities`;
-  `noul(...)` answers carry `noul`, the probability of *yes*.
+  `noul(...)` answers carry `noul`, the probability of *yes*. Verified against
+  `@typesafe-ai/sdk` 0.6.0: the example's tests drive the real client through
+  a stubbed transport (`decideWithJev(states, opts, { fetch, apiKey })`) and
+  check the request body and the parsed answers; CI installs the SDK for that
+  one job so the core package stays zero-dependency.
 - Pricing and latency as stated by TypeSafe at launch (September 2026): output
   is free, input is metered; Jev was in early access at the time of writing.
 - Known limitations are documented by TypeSafe at
