@@ -41,3 +41,9 @@ test('list-rules warns on an undeclared --profile too', () => {
   assert.equal(out.status, 0);
   assert.match(out.stderr, /no rule declares profile "typo"/);
 });
+
+test('help names the support contact', () => {
+  const out = run(['help']);
+  assert.equal(out.status, 0);
+  assert.match(out.stdout, /Enterprise deployment & support: magnoormeno@gmail\.com/);
+});

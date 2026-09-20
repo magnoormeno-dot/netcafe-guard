@@ -72,6 +72,23 @@ that reconfigured leased machines would itself become the multi-tenant risk.
   FAIL [high]     ai-clipboard-history-disabled     Clipboard history is disabled
 ```
 
+## What it does for a venue
+
+- **Answers "is this seat safe for the next person?" in one command** — on the
+  machine, in under a second, no agent to install, nothing changed.
+- **Finds the AI-era leaks a classical baseline misses** — Recall snapshots,
+  clipboard history, a previous tenant's agent keys and MCP configs, a model
+  server open to the whole LAN. The demo seat above passes every classical
+  check and is still an F.
+- **Scales to the floor** — `fleet` turns fifty reports into "this control is
+  broken on 92% of seats": one imaging fix, not fifty tickets.
+- **Turns findings into a fix you can review** — `--fix-script` writes the
+  PowerShell; you read it and run it. Destructive steps stay comments.
+- **Catches drift** — `diff` against the post-imaging golden report, from the
+  scheduler, with a non-zero exit code the moment something regresses.
+- **Gives the owner something they can read** — `--html` is a standalone,
+  plain-language report for the person who signs the cheque.
+
 ## Install
 
 Requires Node.js 18+.
@@ -106,6 +123,18 @@ netcafe-guard scan --json > golden.json        # right after imaging
 netcafe-guard scan --json > now.json           # later, from the scheduler
 netcafe-guard diff golden.json now.json        # regressions, fixes, checks gone unknown
 ```
+
+### The venue workflow
+
+1. **Image a seat, then scan it** — `scan --json > golden.json`. That is your
+   known-good.
+2. **Schedule the scan on every seat** — Task Scheduler, once a day, writing
+   `--json` to a share.
+3. **Read the floor, not the seats** — `fleet ./reports`: what is broken
+   everywhere is an imaging problem; what is broken on one seat is that seat.
+4. **Fix with your eyes open** — `scan --fix-script > fix.ps1`, review, run.
+5. **Prove nothing slid back** — `diff golden.json today.json` in the same
+   scheduled job; exit code 3 means a regression.
 
 ### A whole venue, not one seat
 
@@ -226,6 +255,29 @@ Especially wanted: **real-world rules from people who actually run these venues*
 and detection for café management suites in your region. Most rule
 contributions need zero JavaScript. Start with [CONTRIBUTING.md](CONTRIBUTING.md)
 and the [good first issues](https://github.com/magnoormeno-dot/netcafe-guard/labels/good%20first%20issue).
+
+## Enterprise deployment & commercial support
+
+netcafe-guard is free, MIT-licensed, and will stay that way — every check in
+this repository will always be runnable by anyone. Some venues want more than a
+tool, and that is what we do:
+
+- **Fleet rollout** — scheduled scans on every seat, reports collected
+  centrally, a `fleet` summary in your inbox, alerts on regressions.
+- **Rules for your management suite** — detection for the write-filter, billing
+  and imaging stack your venue actually runs, contributed back upstream where it
+  makes sense.
+- **Remediation review** — the generated fix scripts, adapted and reviewed by
+  someone who has done it on a live floor, so the between-tenant reset is
+  provably clean.
+- **A baseline you can hand to an auditor** — a written standard for shared,
+  AI-equipped seats, with evidence from the scans.
+
+Start with the free tool: run `netcafe-guard fleet` across your seats and send
+us the `--json` output. We reply with the three things to fix first.
+
+**Contact: magnoormeno@gmail.com** · full brief in
+[docs/ENTERPRISE.md](docs/ENTERPRISE.md)
 
 ## License
 

@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const { scan, renderText, renderJson, renderHtml, loadDefaultRules, version } = require('../src');
+const { SUPPORT_CONTACT } = require('../src/report');
 const { diffReports, renderDiffText } = require('../src/diff');
 const { aggregateFleet, renderFleetText } = require('../src/fleet');
 const { buildFixScript } = require('../src/fixscript');
@@ -77,6 +78,7 @@ Examples:
   netcafe-guard fleet ./reports --fail-under 70
 
 Read-only by design: netcafe-guard never changes the machine it audits.
+Enterprise deployment & support: ${SUPPORT_CONTACT}  (docs/ENTERPRISE.md)
 `;
 
 function parseArgs(argv) {
