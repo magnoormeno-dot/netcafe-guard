@@ -6,6 +6,14 @@ All notable changes to this project are documented here. Format loosely follows
 
 ## [Unreleased]
 
+### Added
+- **Enterprise deployment & commercial support**: README section and a
+  one-page brief for decision-makers (`docs/ENTERPRISE.md`) — the problem, what
+  the scan finds, the unattended venue loop, what the free tool gives you and
+  what is offered on top. Contact line in the HTML report footer and in `help`.
+- README: outcome-framed "What it does for a venue" and a five-step venue
+  workflow.
+
 ## [0.1.3] - 2026-09-11
 
 ### Added

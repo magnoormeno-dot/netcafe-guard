@@ -54,3 +54,9 @@ test('JSON profile is null when no profile was requested', () => {
   const result = scan({ facts: FACTS, platform: 'win32' });
   assert.equal(JSON.parse(renderJson(result)).profile, null);
 });
+
+test('HTML report footer carries the support contact and stays self-contained', () => {
+  const html = renderHtml(scan({ facts: FACTS, platform: 'win32' }));
+  assert.match(html, /mailto:magnoormeno@gmail\.com/);
+  assert.doesNotMatch(html, /<link|<script|src=/);
+});
