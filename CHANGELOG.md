@@ -6,6 +6,8 @@ All notable changes to this project are documented here. Format loosely follows
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-09-20
+
 ### Added
 - **Enterprise deployment & commercial support**: README section and a
   one-page brief for decision-makers (`docs/ENTERPRISE.md`) — the problem, what
@@ -36,6 +38,8 @@ All notable changes to this project are documented here. Format loosely follows
   installs the SDK for that one job. `decideWithJev` accepts SDK client
   config (`fetch`, `apiKey`, `baseURL`, `timeout`) and results carry `model`,
   `usage` and the route probabilities.
+- 95 tests (84 at 0.1.3); the two that drive the real SDK skip when it is not
+  installed, so the core suite still needs nothing but Node.
 
 ## [0.1.3] - 2026-09-11
 
