@@ -13,6 +13,16 @@ All notable changes to this project are documented here. Format loosely follows
   what is offered on top. Contact line in the HTML report footer and in `help`.
 - README: outcome-framed "What it does for a venue" and a five-step venue
   workflow.
+- Rules can name an **`evidence`** fact that travels with the finding — the
+  file labels behind a count, the service behind a boolean — shown in text,
+  HTML and JSON output. Four baseline rules use it (credentials, agent configs,
+  exposed model servers, restore agent). The README example now shows real
+  output.
+- **`examples/jev-triage/`** — routing findings to venue queues with TypeSafe
+  AI's Jev decision model (route, urgency, needs-human; low confidence goes to
+  human review). Offline-testable: `--dry-run` prints exactly what would be
+  sent and sends nothing; the scanner's verdict is never delegated. The core
+  package stays zero-dependency.
 
 ## [0.1.3] - 2026-09-11
 

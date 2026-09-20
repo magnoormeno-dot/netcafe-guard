@@ -11,6 +11,7 @@
       "fact": "sessionRestoreActive",
       "operator": "isTrue"
     },
+    "evidence": "sessionRestoreAgent",
     "remediation": "Install and enable a write filter or disk-restore agent (Windows Unified Write Filter, Deep Freeze, or your café management suite) so each tenant gets a clean machine. Without this, nothing else on a leased PC can be trusted between users — every other control can be undone by the previous tenant.",
     "reference": "docs/VISION.md — multi-tenant hygiene"
   },
@@ -27,6 +28,7 @@
       "operator": "lte",
       "value": 0
     },
+    "evidence": "leftoverCredentialFiles",
     "remediation": "Remove SSH keys, cloud credentials, and AI agent/MCP config files from the shared profile, and wipe the profile between sessions. On a leased seat these are a free identity for the next tenant — an AI API key left behind bills someone else.",
     "reference": "docs/VISION.md — the AI you invited in is the exposure"
   },
@@ -174,6 +176,7 @@
       "operator": "lte",
       "value": 0
     },
+    "evidence": "agentToolConfigFiles",
     "remediation": "Remove agent tool and MCP server configuration files (claude_desktop_config.json, .cursor/mcp.json, .codex/config.toml, ...) from the shared profile and wipe the profile between sessions. These files map exactly which tools and servers the previous tenant's agent could reach — often with tokens embedded in env blocks — and hand the next tenant a preconfigured, pre-approved agent.",
     "reference": "docs/VISION.md — AI surface area"
   },
@@ -190,6 +193,7 @@
       "operator": "lte",
       "value": 0
     },
+    "evidence": "aiServiceExposed",
     "remediation": "Bind local model servers to loopback only: OLLAMA_HOST=127.0.0.1 for Ollama, turn off 'Serve on local network' in LM Studio, --host 127.0.0.1 for Gradio/KoboldCpp/Jan — or block the port in the host firewall. Bound to every interface on a shared LAN, an unauthenticated model server is free compute for anyone on the network and lets a neighbour read prompts, pull or delete models, and reuse the previous tenant's setup.",
     "reference": "Ollama FAQ — OLLAMA_HOST binding; docs/VISION.md — AI surface area"
   },

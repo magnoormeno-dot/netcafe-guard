@@ -72,3 +72,22 @@ test('text output renders without throwing and mentions the score', () => {
   assert.match(text, /Score:/);
   assert.match(text, /netcafe-guard/);
 });
+
+test('a rule can name an evidence fact that travels with the finding in every output', () => {
+  const facts = {
+    hostname: 'seat', platform: 'win32', arch: 'x64',
+    leftoverCredentialCount: 2, leftoverCredentialFiles: ['~/.ssh/id_rsa', '~/.aws/credentials']
+  };
+  const result = scan({ facts, platform: 'win32' });
+  const f = result.findings.find((x) => x.id === 'tenant-no-leftover-credentials');
+  assert.equal(f.status, 'fail');
+  assert.equal(f.observed, 2);
+  assert.deepEqual(f.evidence, ['~/.ssh/id_rsa', '~/.aws/credentials']);
+  assert.match(renderText(result, { color: false }), /evidence: \["~\/.ssh\/id_rsa","~\/.aws\/credentials"\]/);
+  assert.deepEqual(JSON.parse(renderJson(result)).findings.find((x) => x.id === f.id).evidence, f.evidence);
+
+  // No evidence fact present -> no evidence key, not an empty one.
+  const bare = scan({ facts: { hostname: 'seat', platform: 'win32', arch: 'x64', leftoverCredentialCount: 0 }, platform: 'win32' })
+    .findings.find((x) => x.id === 'tenant-no-leftover-credentials');
+  assert.equal('evidence' in bare, false);
+});

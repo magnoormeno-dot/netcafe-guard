@@ -56,6 +56,9 @@ function validateRule(rule, index) {
   if (rule.platforms && !Array.isArray(rule.platforms)) {
     problems.push(`${where}: "platforms" must be an array`);
   }
+  if (rule.evidence !== undefined && (typeof rule.evidence !== 'string' || !rule.evidence)) {
+    problems.push(`${where}: "evidence" must be a non-empty fact name`);
+  }
   if (rule.fix !== undefined) {
     const steps = Array.isArray(rule.fix) ? rule.fix : [rule.fix];
     if (!steps.length) problems.push(`${where}: "fix" must not be empty`);

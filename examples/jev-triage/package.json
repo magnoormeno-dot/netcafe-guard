@@ -1,0 +1,15 @@
+{
+  "name": "netcafe-guard-jev-triage-example",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Example: route netcafe-guard findings to venue queues with TypeSafe AI's Jev decision model. Decisions only — nothing is executed.",
+  "type": "commonjs",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "triage": "node triage.js",
+    "dry-run": "node triage.js --dry-run ../../demo/report.json"
+  },
+  "dependencies": {
+    "@typesafe-ai/sdk": "*"
+  }
+}

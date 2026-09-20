@@ -15,6 +15,7 @@ expectation, the rule passes; otherwise it fails.
 | `platforms` | no | Array of `win32` \| `linux` \| `darwin` \| `all`. Omitted or `["all"]` = every platform. Non-matching platforms are reported as **skip**. |
 | `profiles` | no | Array of venue profile names (the baseline uses `gaming-cafe` and `shared-office`). Omitted or `["all"]` = applies under every profile. With `scan --profile <name>`, rules declaring only other profiles are reported as **skip**; without `--profile` every rule applies. |
 | `check` | yes | `{ "fact": "...", "operator": "...", "value": ... }` |
+| `evidence` | no | Name of a second fact to carry into the finding as `evidence` — the file labels behind a count, the service name behind a boolean. Shown in text, HTML and JSON output so a report says *what* it saw. |
 | `remediation` | recommended | Exactly what to run or click to fix it. This is the most valuable part for the person reading the report. |
 | `reference` | no | Where the rule comes from (CIS Benchmark, vendor doc, CVE). |
 | `fix` | no | Machine-readable remediation used by `scan --fix-script`. One step or an array of steps — see **Scriptable fixes** below. Omit it when the fix is destructive or needs judgement; the prose `remediation` is then emitted as a comment instead. |
