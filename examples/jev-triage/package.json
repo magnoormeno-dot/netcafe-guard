@@ -7,7 +7,7 @@
   "engines": { "node": ">=20" },
   "scripts": {
     "triage": "node triage.js",
-    "dry-run": "node triage.js --dry-run ../../demo/report.json"
+    "dry-run": "node ../../bin/netcafe-guard.js scan --facts ../../demo/cafe-pc-07.json --platform win32 --json > report.json && node triage.js report.json --dry-run"
   },
   "dependencies": {
     "@typesafe-ai/sdk": "*"

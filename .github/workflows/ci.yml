@@ -25,3 +25,24 @@ jobs:
           node bin/netcafe-guard.js version
           node bin/netcafe-guard.js list-rules
           node bin/netcafe-guard.js scan --no-color
+
+  # The Jev example is the one place a third-party SDK is involved. Install it
+  # here — never in the core package — and run the example's tests against the
+  # real client with a stubbed transport, so a change in the SDK's builder
+  # contract fails CI instead of the first real call.
+  jev-example:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the example's SDK dependency
+        working-directory: examples/jev-triage
+        run: npm install --no-audit --no-fund
+      - name: Run the example's tests against the real SDK
+        run: node --test test/examples_jev_triage.test.js
+      - name: Dry run against the demo seat (sends nothing)
+        run: |
+          node bin/netcafe-guard.js scan --facts demo/cafe-pc-07.json --platform win32 --json > report.json
+          node examples/jev-triage/triage.js report.json --dry-run > /dev/null

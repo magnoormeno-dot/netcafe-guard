@@ -48,13 +48,18 @@ const ROUTES = {
   no_action: 'Nothing failed and nothing is unknown; there is nothing to do.'
 };
 
-const URGENCY = {
-  0: 'No action needed.',
-  1: 'This week, with the next scheduled maintenance window.',
-  2: 'Today, before the seat is rented again if at all practical.',
-  3: 'Now: take the seat out of service until fixed — a previous tenant\'s credentials, ' +
+/*
+ * A score rubric is a LIST indexed by score from zero — the SDK rejects a map
+ * (`score()` throws "criteria must be a list"), while `choice()` takes a map of
+ * labels to descriptions. Getting this wrong fails before any request is sent.
+ */
+const URGENCY = [
+  'No action needed.',
+  'This week, with the next scheduled maintenance window.',
+  'Today, before the seat is rented again if at all practical.',
+  'Now: take the seat out of service until fixed — a previous tenant\'s credentials, ' +
     'captured screens or an open model server are exposed to the next person.'
-};
+];
 
 /** Plain-data question specs: rendered by --dry-run, built into SDK questions at call time. */
 const QUESTION_SPECS = {
@@ -131,6 +136,7 @@ function applyThresholds(answers, opts = DEFAULTS) {
     queue: reasons.length ? 'human_review' : route.choice,
     route: route.choice ?? null,
     routeConfidence: route.confidence ?? null,
+    routeProbabilities: route.probabilities ?? null,
     urgency: typeof urgency.score === 'number' ? Math.round(urgency.score) : null,
     urgencyConfidence: urgency.confidence ?? null,
     needsHuman: pHuman,
@@ -142,24 +148,35 @@ function fmt(n) {
   return typeof n === 'number' ? n.toFixed(2) : 'n/a';
 }
 
-async function decideWithJev(states, opts) {
+/**
+ * One request per seat. `clientConfig` is passed straight to the SDK client
+ * (`apiKey`, `baseURL`, `timeout`, `fetch`, …) so a test can swap the transport;
+ * the CLI passes nothing and the SDK reads TYPESAFE_API_KEY itself.
+ */
+async function decideWithJev(states, opts = DEFAULTS, clientConfig = {}) {
   let sdk;
   try {
     sdk = require('@typesafe-ai/sdk');
   } catch (_err) {
     throw new Error('@typesafe-ai/sdk is not installed — run `npm install` in examples/jev-triage');
   }
-  if (!process.env.TYPESAFE_API_KEY) {
+  if (!process.env.TYPESAFE_API_KEY && !clientConfig.apiKey) {
     throw new Error('TYPESAFE_API_KEY is not set');
   }
-  const client = new sdk.TypeSafeClient();
+  const client = new sdk.TypeSafeClient(clientConfig);
   const questions = buildQuestions(sdk);
   const results = [];
   for (const state of states) {
     const request = { state, questions };
     if (opts.model) request.model = opts.model;
     const response = await client.systemOne(request);
-    results.push({ hostname: state.hostname, score: state.score, ...applyThresholds(response.answers, opts) });
+    results.push({
+      hostname: state.hostname,
+      score: state.score,
+      ...applyThresholds(response.answers, opts),
+      model: response.model ?? null,
+      usage: response.usage ?? null
+    });
   }
   return results;
 }
@@ -246,7 +263,10 @@ async function main() {
   return 0;
 }
 
-module.exports = { ROUTES, URGENCY, QUESTION_SPECS, DEFAULTS, buildState, buildQuestions, applyThresholds, readReports, renderText };
+module.exports = {
+  ROUTES, URGENCY, QUESTION_SPECS, DEFAULTS,
+  buildState, buildQuestions, applyThresholds, decideWithJev, readReports, renderText
+};
 
 if (require.main === module) {
   main().then(

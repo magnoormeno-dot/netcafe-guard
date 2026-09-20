@@ -1,0 +1,70 @@
+name: Jev triage smoke test
+
+# Manual only. Runs examples/jev-triage against the demo seat and one clean
+# seat with a REAL Jev call, using the TYPESAFE_API_KEY repository secret
+# (Settings → Secrets and variables → Actions). The key never appears in logs:
+# the example reads it from the environment and GitHub masks the secret.
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: Jev model to use (empty = the SDK default, jev-latest)
+        required: false
+        default: ''
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Require the TYPESAFE_API_KEY secret
+        env:
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+        run: |
+          if [ -z "$TYPESAFE_API_KEY" ]; then
+            echo "::error::Repository secret TYPESAFE_API_KEY is not set. Add it under Settings → Secrets and variables → Actions, then re-run."
+            exit 1
+          fi
+          echo "secret present (length ${#TYPESAFE_API_KEY})"
+
+      - name: Install the example's SDK dependency
+        working-directory: examples/jev-triage
+        run: npm install --no-audit --no-fund
+
+      - name: Build two seats to triage
+        run: |
+          mkdir -p reports
+          # Seat 07: the demo seat, grade F — leftover credentials, no restore agent, Recall on.
+          node bin/netcafe-guard.js scan --facts demo/cafe-pc-07.json --platform win32 --json > reports/cafe-pc-07.json
+          # Seat 12: a clean seat, so the model has a no_action case in front of it.
+          cat > clean-facts.json <<'JSON'
+          { "platform": "win32", "arch": "x64", "hostname": "CAFE-PC-12",
+            "autoAdminLogon": false, "defaultPasswordStored": false, "guestAccountActive": false, "rdpEnabled": false,
+            "autorunDisabledAllDrives": true, "firewallAllProfilesOn": true, "defenderRealtimeEnabled": true,
+            "screenLockTimeoutSec": 600, "screenLockOnResume": true,
+            "sessionRestoreActive": true, "sessionRestoreAgent": "Unified Write Filter",
+            "leftoverCredentialCount": 0, "leftoverCredentialFiles": [],
+            "agentToolConfigCount": 0, "agentToolConfigFiles": [], "aiServiceExposedCount": 0, "aiServiceExposed": [],
+            "recallDisabled": true, "recallSnapshotStorePresent": false, "gameDvrDisabled": true,
+            "clipboardHistoryDisabled": true, "clipboardSyncDisabled": true, "copilotPolicySet": true,
+            "copilotDisabled": true, "browserPasswordSavingDisabled": true }
+          JSON
+          node bin/netcafe-guard.js scan --facts clean-facts.json --platform win32 --json > reports/cafe-pc-12.json
+          node bin/netcafe-guard.js fleet reports
+
+      - name: Dry run — exactly what will be sent
+        run: node examples/jev-triage/triage.js reports --dry-run
+
+      - name: Real call — route both seats with Jev
+        env:
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+        run: |
+          MODEL_FLAG=""
+          if [ -n "${{ inputs.model }}" ]; then MODEL_FLAG="--model ${{ inputs.model }}"; fi
+          node examples/jev-triage/triage.js reports $MODEL_FLAG
+          echo "--- machine-readable ---"
+          node examples/jev-triage/triage.js reports --json $MODEL_FLAG
