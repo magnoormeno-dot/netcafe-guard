@@ -90,6 +90,13 @@ The tool is free and stays free. The work around it is what we sell:
   hand to a landlord, an insurer or an auditor, with scan evidence behind it.
 - **Training** — half a day with your technicians: what the checks mean, how
   to read a fleet report, how to keep the image clean.
+- **Automating what happens next** — a hundred seats produce a hundred reports
+  a day. We wire them into your ticketing or MDM, including deploying a
+  decision model (TypeSafe AI's Jev) that routes each seat to the right queue —
+  re-image, remote fix, technician visit, owner decision — with a confidence
+  score, so only the genuinely ambiguous cases reach a person. The scanner's
+  verdict stays deterministic; the model only decides who handles it. A
+  working example ships in the repository (`examples/jev-triage/`).
 
 ## How an engagement starts
 

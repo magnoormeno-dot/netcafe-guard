@@ -64,11 +64,14 @@ that reconfigured leased machines would itself become the multi-tenant risk.
   17 pass · 4 fail · 0 unknown · 0 skipped
 
   FAIL [critical] tenant-session-restore-active     Session restore / write protection is active
-        fix: Without this, nothing else on a leased PC can be trusted between users...
+        observed: false  ·  expected: true
+        fix: Install and enable a write filter or disk-restore agent ... Without this, nothing
+             else on a leased PC can be trusted between users.
   FAIL [critical] tenant-no-leftover-credentials    No leftover credential or AI agent key files
-        observed: ["~/.ssh/id_rsa","~/.aws/credentials"]
+        observed: 2  ·  expected: <= 0
+        evidence: ["~/.ssh/id_rsa","~/.aws/credentials"]
   FAIL [critical] ai-recall-disabled                Screen recall / AI data analysis capture is disabled
-        fix: The next tenant can page back through the previous one's banking session...
+        fix: ... the next tenant can page back through the previous one's banking session.
   FAIL [high]     ai-clipboard-history-disabled     Clipboard history is disabled
 ```
 
@@ -175,6 +178,20 @@ the wrong place for `rm -rf` on somebody's profile. Rules carry the machine-
 readable part in an optional `fix` field, so a new rule can ship its own
 one-line remediation (see [`docs/RULES.md`](docs/RULES.md)).
 
+### Decisions downstream: routing findings with a decision model
+
+netcafe-guard decides **what is wrong** — deterministically, offline, from rules
+you can read. It never asks a model whether a machine is safe. What a venue's
+automation does *next* with a hundred reports is a different kind of question:
+which queue does this seat go to, how urgent is it, should a person look first.
+That is a routing decision, and it is what decision models such as
+[TypeSafe AI's Jev](https://typesafe.ai/) are built for: typed answers with a
+calibrated confidence, no text to parse. Low confidence goes to a human.
+
+[`examples/jev-triage/`](examples/jev-triage/) is a worked, offline-testable
+example of that layer. The scanner itself stays zero-dependency and the
+security verdict stays yours.
+
 ### Scores
 
 Starts at 100, loses points per failed check weighted by severity (critical −25,
@@ -272,6 +289,10 @@ tool, and that is what we do:
   provably clean.
 - **A baseline you can hand to an auditor** — a written standard for shared,
   AI-equipped seats, with evidence from the scans.
+- **Decision automation** — wiring scan and fleet output into your ticketing
+  or MDM, including deploying a decision model such as TypeSafe's Jev to route
+  findings to the right queue with a confidence you can set thresholds on
+  (see [`examples/jev-triage/`](examples/jev-triage/)).
 
 Start with the free tool: run `netcafe-guard fleet` across your seats and send
 us the `--json` output. We reply with the three things to fix first.

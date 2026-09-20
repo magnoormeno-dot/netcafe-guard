@@ -106,6 +106,10 @@ function evaluateRule(rule, facts, platform, profile) {
   }
 
   const observed = facts ? facts[rule.check.fact] : undefined;
+  // Optional supporting fact — the file labels behind a count, the service
+  // behind a boolean — so a report says *what* it saw, not just that it did.
+  const evidence = rule.evidence && facts ? facts[rule.evidence] : undefined;
+  if (evidence !== undefined) base.evidence = evidence;
 
   // A missing fact on an applicable rule is "unknown", not a silent pass.
   // For a security tool, unknown must be surfaced, never assumed safe.

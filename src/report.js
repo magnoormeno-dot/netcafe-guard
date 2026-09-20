@@ -98,6 +98,9 @@ function renderText(result, options = {}) {
     lines.push(`  ${mark} ${sev} ${colorize(f.id, 'bold', useColor)}  ${f.title}`);
     if (f.status === 'fail') {
       lines.push(colorize(`        observed: ${JSON.stringify(f.observed)}  ·  expected: ${f.expected}`, 'gray', useColor));
+      if (f.evidence !== undefined) {
+        lines.push(colorize(`        evidence: ${JSON.stringify(f.evidence)}`, 'gray', useColor));
+      }
       if (f.remediation) lines.push(colorize(`        fix: ${f.remediation}`, 'gray', useColor));
     } else if (f.status === 'unknown') {
       lines.push(colorize(`        could not determine — check manually`, 'gray', useColor));
@@ -156,7 +159,10 @@ const STATUS_LABEL = {
 
 function findingDetail(f) {
   if (f.status === 'fail') {
-    return `observed <code>${escapeHtml(JSON.stringify(f.observed))}</code> · expected <code>${escapeHtml(f.expected)}</code>`;
+    const evidence = f.evidence !== undefined
+      ? ` · evidence <code>${escapeHtml(JSON.stringify(f.evidence))}</code>`
+      : '';
+    return `observed <code>${escapeHtml(JSON.stringify(f.observed))}</code> · expected <code>${escapeHtml(f.expected)}</code>${evidence}`;
   }
   if (f.status === 'unknown') return 'could not determine — check manually';
   if (f.status === 'error') return escapeHtml(f.reason || 'malformed rule');
