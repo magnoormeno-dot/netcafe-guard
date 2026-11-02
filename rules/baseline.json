@@ -151,7 +151,8 @@
       "fact": "copilotPolicySet",
       "operator": "isTrue"
     },
-    "remediation": "Set TurnOffWindowsCopilot deliberately (either value) under the WindowsCopilot policy key. The finding here is the absence of a decision: an assistant with system reach on a machine shared by strangers should be allowed or denied on purpose, not inherited from the OS default.",
+    "evidence": "copilotPolicy",
+    "remediation": "Set TurnOffWindowsCopilot deliberately (0 or 1) under the machine policy key HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot; machine policy takes precedence over the per-user key. The finding here is the absence of a decision: an assistant with system reach on a machine shared by strangers should be allowed or denied on purpose, not inherited from the OS default.",
     "reference": "docs/VISION.md — AI surface area",
     "fix": {
       "type": "registry",

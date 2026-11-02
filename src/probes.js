@@ -123,16 +123,7 @@ function probeAiSurface(facts) {
 
   probeGameDvr(facts);
 
-  // Windows Copilot — an assistant with system reach on a machine shared by
-  // strangers. Venues should decide deliberately, not inherit the default.
-  const copilotOff =
-    regQuery('HKCU\\Software\\Policies\\Microsoft\\Windows\\WindowsCopilot', 'TurnOffWindowsCopilot') ||
-    regQuery('HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot', 'TurnOffWindowsCopilot');
-  if (copilotOff !== undefined) {
-    const n = parseInt(copilotOff, 16) || parseInt(copilotOff, 10);
-    facts.copilotPolicySet = true;
-    facts.copilotDisabled = n === 1;
-  }
+  probeCopilotPolicy(facts);
 
   // Clipboard history: one tenant's copied password, readable by the next.
   const clipHistory = regQuery(
@@ -164,6 +155,32 @@ function probeAiSurface(facts) {
       const n = parseInt(v, 16) || parseInt(v, 10);
       return n === 0;
     });
+  }
+}
+
+/**
+ * Windows Copilot — an assistant with system reach on a machine shared by
+ * strangers. Venues should decide deliberately, not inherit the default.
+ *
+ * Machine policy (HKLM) is authoritative and is what the generated fix script
+ * writes, so it is read first; the per-user value (HKCU of whoever runs the
+ * scan) is only a fallback. A value other than 0 or 1 is not a valid decision
+ * and leaves the facts undefined, so the rule reports unknown, never pass.
+ */
+function probeCopilotPolicy(facts, query = regQuery) {
+  const sources = [
+    ['HKLM', 'HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot'],
+    ['HKCU', 'HKCU\\Software\\Policies\\Microsoft\\Windows\\WindowsCopilot']
+  ];
+  for (const [hive, key] of sources) {
+    const raw = query(key, 'TurnOffWindowsCopilot');
+    if (raw === undefined) continue;
+    const n = /^0x/i.test(raw) ? parseInt(raw, 16) : parseInt(raw, 10);
+    if (n !== 0 && n !== 1) return;
+    facts.copilotPolicySet = true;
+    facts.copilotDisabled = n === 1;
+    facts.copilotPolicy = `${hive}: assistant ${n === 1 ? 'off' : 'on'} (TurnOffWindowsCopilot=${n})`;
+    return;
   }
 }
 
@@ -461,6 +478,7 @@ module.exports = {
   detectService,
   probeAiSurface,
   probeGameDvr,
+  probeCopilotPolicy,
   probeSessionRestore,
   probeLeftoverCredentials,
   probeAgentToolConfigs,

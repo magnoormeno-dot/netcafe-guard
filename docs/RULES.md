@@ -62,7 +62,7 @@ by the priority order in [VISION.md](VISION.md).
 **AI surface area** — what does the AI here see, keep, and hold?
 `recallDisabled`, `recallSnapshotStorePresent`, `gameDvrDisabled`,
 `clipboardHistoryDisabled`, `clipboardSyncDisabled`, `copilotPolicySet`,
-`copilotDisabled`, `agentToolConfigCount`, `agentToolConfigFiles`,
+`copilotDisabled`, `copilotPolicy`, `agentToolConfigCount`, `agentToolConfigFiles`,
 `aiServiceExposedCount`, `aiServiceExposed`
 
 **Classical baseline (Windows)**

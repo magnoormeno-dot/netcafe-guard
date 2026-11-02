@@ -6,6 +6,7 @@ const { scan } = require('../src');
 const {
   probeLeftoverCredentials,
   probeGameDvr,
+  probeCopilotPolicy,
   LEFTOVER_CREDENTIAL_CANDIDATES
 } = require('../src/probes');
 
@@ -164,4 +165,44 @@ test('Game DVR falls back to the per-user setting when policy is absent', () => 
   );
 
   assert.equal(facts.gameDvrDisabled, true);
+});
+
+function copilotQuery(hklm, hkcu) {
+  return (key, value) => {
+    assert.equal(value, 'TurnOffWindowsCopilot');
+    return key.startsWith('HKLM') ? hklm : hkcu;
+  };
+}
+
+test('Copilot machine policy (HKLM) takes precedence over the per-user value', () => {
+  const facts = {};
+  probeCopilotPolicy(facts, copilotQuery('0x1', '0x0'));
+  assert.equal(facts.copilotPolicySet, true);
+  assert.equal(facts.copilotDisabled, true);
+  assert.match(facts.copilotPolicy, /^HKLM: assistant off/);
+});
+
+test('Copilot policy falls back to HKCU and reports a deliberate "on" decision', () => {
+  const facts = {};
+  probeCopilotPolicy(facts, copilotQuery(undefined, '0x0'));
+  assert.equal(facts.copilotPolicySet, true);
+  assert.equal(facts.copilotDisabled, false);
+  assert.match(facts.copilotPolicy, /^HKCU: assistant on/);
+});
+
+test('Copilot policy absent or invalid stays unknown, never pass', () => {
+  for (const [hklm, hkcu] of [[undefined, undefined], ['0x2', undefined], ['junk', '0x1']]) {
+    const facts = {};
+    probeCopilotPolicy(facts, copilotQuery(hklm, hkcu));
+    assert.equal(facts.copilotPolicySet, undefined);
+    const result = scan({ facts: { ...FULLY_HARDENED, copilotPolicySet: undefined, ...facts }, platform: 'win32' });
+    assert.equal(result.findings.find((f) => f.id === 'ai-assistant-policy-set').status, 'unknown');
+  }
+});
+
+test('the assistant-policy finding carries where the decision was found', () => {
+  const facts = { ...FULLY_HARDENED, copilotPolicy: 'HKLM: assistant off (TurnOffWindowsCopilot=1)' };
+  const finding = scan({ facts, platform: 'win32' }).findings.find((f) => f.id === 'ai-assistant-policy-set');
+  assert.equal(finding.status, 'pass');
+  assert.match(JSON.stringify(finding.evidence), /HKLM: assistant off/);
 });
