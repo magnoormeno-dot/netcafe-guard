@@ -13,7 +13,8 @@
   "scripts": {
     "test": "node --test",
     "scan": "node bin/netcafe-guard.js scan",
-    "lint": "node --check bin/netcafe-guard.js"
+    "lint": "node --check bin/netcafe-guard.js",
+    "duty:visual": "node scripts/duty-visual.js"
   },
   "files": [
     "bin/",

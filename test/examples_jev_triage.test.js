@@ -135,6 +135,23 @@ function realSdk() {
   }
 }
 
+// What the SDK hands to fetch: a JSON string (0.6), or since 0.7 a zstd-compressed byte body
+// once the payload reaches 1 KiB on a runtime with zlib zstd (Node 22.15+; older runtimes get
+// the string). Decode it the way the real server would, so the assertions see the payload.
+async function readJsonBody(init) {
+  const encoding = new Headers(init.headers).get('content-encoding');
+  let body = init.body;
+  if (typeof body === 'string') {
+    assert.equal(encoding, null, 'a string body is sent uncompressed');
+    return JSON.parse(body);
+  }
+  if (typeof body.arrayBuffer === 'function') body = await body.arrayBuffer(); // Blob
+  let bytes = Buffer.from(body);
+  if (encoding === 'zstd') bytes = require('zlib').zstdDecompressSync(bytes);
+  else assert.equal(encoding, null, `unexpected Content-Encoding ${encoding}`);
+  return JSON.parse(bytes.toString('utf8'));
+}
+
 test('with the real SDK and a stubbed transport, one seat goes over the wire and comes back as a queue', async (t) => {
   const sdk = realSdk();
   if (!sdk) {
@@ -154,7 +171,7 @@ test('with the real SDK and a stubbed transport, one seat goes over the wire and
     usage: { input_tokens: 812, output_tokens: 0 }
   };
   const fetch = async (url, init) => {
-    seen.push({ url: String(url), method: init.method, headers: new Headers(init.headers), body: JSON.parse(init.body) });
+    seen.push({ url: String(url), method: init.method, headers: new Headers(init.headers), body: await readJsonBody(init) });
     return new Response(JSON.stringify(reply), { status: 200, headers: { 'content-type': 'application/json' } });
   };
 
@@ -164,6 +181,7 @@ test('with the real SDK and a stubbed transport, one seat goes over the wire and
   const req = seen[0];
   assert.equal(req.method, 'POST');
   assert.match(req.url, /\/v1\/systemone$/);
+  assert.equal(req.headers.get('content-type'), 'application/json');
   assert.equal(req.body.model, 'jev-latest');
   assert.deepEqual(req.body.state, JSON.parse(JSON.stringify(state)));
   assert.ok(Array.isArray(req.body.questions.urgency.criteria), 'the score rubric crosses the wire as a list');
