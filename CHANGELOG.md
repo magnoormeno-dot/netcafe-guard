@@ -6,6 +6,14 @@ All notable changes to this project are documented here. Format loosely follows
 
 ## [Unreleased]
 
+### Added
+- `scripts/duty-visual.js` — maintainer tooling for growth-duty visuals, not
+  part of the npm package: `assemble` frames into a looping GIF, `inspect` a
+  GIF against the hard checks, `generate` with OpenAI gpt-image-2.6, and
+  `auto`, which runs the subscription route first and the paid API only when
+  that output fails the gate. Policy in `docs/growth/DUTY_MANUAL.md`;
+  11 tests, none touching the network.
+
 ## [0.1.4] - 2026-09-20
 
 ### Added
