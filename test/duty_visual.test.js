@@ -2,9 +2,9 @@
 
 /*
  * scripts/duty-visual.js is maintainer tooling (not shipped in the npm package)
- * with a cost policy baked in: the subscription route first, the paid images
- * API only when that output fails the gate. These tests never touch the
- * network and never need a key.
+ * with a cost policy baked in: the duty session's own frames first, the paid
+ * images API only when the assembled GIF fails the gate. These tests never
+ * touch the network and never need a key.
  */
 
 const { test } = require('node:test');
@@ -109,48 +109,66 @@ test('generate explains a 401 without echoing the key', async () => {
   );
 });
 
-test('auto: a subscription command whose output passes the gate never touches the API', async () => {
-  const out = path.join(tmpdir(), 'own.gif');
-  const runner = (cmd, env) => {
-    assert.match(cmd, /own-generator/);
-    assert.equal(env.DUTY_VISUAL_PROMPT, 'draw it');
-    fs.writeFileSync(env.DUTY_VISUAL_OUT, syntheticGif({ frames: 4 }));
-    return { status: 0 };
+/** Stands in for assemble so auto's policy is testable without ffmpeg: writes a GIF with N frames. */
+function fakeAssemble(frames, calls = []) {
+  return ({ frames: dir, out }) => {
+    calls.push(dir);
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, syntheticGif({ frames }));
+    return { tier: 'subscription', out, stats: dv.parseGif(fs.readFileSync(out)) };
   };
-  const r = await dv.auto({ prompt: 'draw it', out, subscriptionCmd: 'own-generator {prompt} {out}', runner, fetchImpl: neverFetch });
+}
+
+test('listFrames orders frames by number and accepts a directory or a printf pattern', () => {
+  const dir = tmpdir();
+  for (const name of ['f10.png', 'f2.png', 'f1.png', 'notes.txt', 'f003.PNG']) fs.writeFileSync(path.join(dir, name), '');
+  assert.deepEqual(dv.listFrames(dir).map((f) => path.basename(f)), ['f1.png', 'f2.png', 'f003.PNG', 'f10.png']);
+  const seq = tmpdir();
+  for (const name of ['s010.png', 's000.png', 's001.png', 'other.png']) fs.writeFileSync(path.join(seq, name), '');
+  assert.deepEqual(dv.listFrames(path.join(seq, 's%03d.png')).map((f) => path.basename(f)), ['s000.png', 's001.png', 's010.png']);
+  assert.throws(() => dv.listFrames(tmpdir()), /no PNG frames/);
+  assert.throws(() => dv.listFrames(path.join(dir, 'missing')), /frames directory not found/);
+  assert.throws(() => dv.listFrames(undefined), /needs --frames/);
+});
+
+test('auto: your own frames that pass the gate never touch the API', async () => {
+  const out = path.join(tmpdir(), 'own.gif');
+  const calls = [];
+  const r = await dv.auto({ frames: 'drawn', prompt: 'p', out, assembleImpl: fakeAssemble(4, calls), fetchImpl: neverFetch });
+  assert.deepEqual(calls, ['drawn']);
   assert.equal(r.tier, 'subscription');
+  assert.equal(r.ok, true);
   assert.equal(r.stats.frames, 4);
   assert.deepEqual(r.attempts.map((a) => [a.tier, a.ok]), [['subscription', true]]);
-  assert.match(dv.logLine(r), /^visual \| subscription \| own work \| 4x4 \| 4 frames/);
+  assert.match(dv.logLine(r), /^visual \| subscription \| own work \| 4x4 \| 4 frames.* \| 0 tokens \| /);
 });
 
-test('auto: a failing subscription command falls back to the API and records both attempts', async () => {
+test('auto: frames that fail the gate fall back to the API once and record both attempts', async () => {
   const out = path.join(tmpdir(), 'fallback.gif');
-  const fetchImpl = fakeFetch({ data: [{ b64_json: syntheticGif({ frames: 2 }).toString('base64') }], usage: { total_tokens: 10 } });
-  const r = await dv.auto({ prompt: 'p', out, subscriptionCmd: 'exit 1', runner: () => ({ status: 1 }), fetchImpl, apiKey: 'k' });
+  const fetchImpl = fakeFetch({ data: [{ b64_json: syntheticGif({ frames: 9 }).toString('base64') }], usage: { total_tokens: 10 } });
+  const r = await dv.auto({ frames: 'drawn', prompt: 'p', out, assembleImpl: fakeAssemble(1), fetchImpl, apiKey: 'k' });
   assert.equal(r.tier, 'api');
   assert.deepEqual(r.attempts.map((a) => [a.tier, a.ok]), [['subscription', false], ['api', true]]);
-  assert.match(r.attempts[0].reasons[0], /exited 1/);
+  assert.match(r.attempts[0].reasons[0], /not animated/);
   assert.equal(fetchImpl.calls.length, 1);
+  assert.equal(JSON.parse(fetchImpl.calls[0].init.body).output_format, 'gif');
 });
 
-test('auto: without a subscription command the reason is recorded; --no-api refuses the paid route', async () => {
-  const out = path.join(tmpdir(), 'static.gif');
-  const runner = (_cmd, env) => { fs.writeFileSync(env.DUTY_VISUAL_OUT, syntheticGif({ frames: 1 })); return { status: 0 }; };
+test('auto never skips your own frames, and stops before paying without --prompt or with --no-api', async () => {
+  const out = path.join(tmpdir(), 'x.gif');
+  await assert.rejects(() => dv.auto({ prompt: 'p', out, fetchImpl: neverFetch }), /draw them first and pass --frames/);
+  await assert.rejects(() => dv.auto({ frames: 'd', prompt: 'p', out, format: 'png', fetchImpl: neverFetch }), /auto makes GIFs/);
   await assert.rejects(
-    () => dv.auto({ prompt: 'p', out, subscriptionCmd: 'still-image {out}', runner, noApi: true, fetchImpl: neverFetch }),
+    () => dv.auto({ frames: 'd', prompt: 'p', out, noApi: true, assembleImpl: fakeAssemble(1), fetchImpl: neverFetch }),
     /not animated.*--no-api/
   );
-  const fetchImpl = fakeFetch({ data: [{ b64_json: syntheticGif({ frames: 2 }).toString('base64') }] });
-  const r = await dv.auto({ prompt: 'p', out, subscriptionCmd: '', fetchImpl, apiKey: 'k' });
-  assert.match(r.attempts[0].reasons[0], /DUTY_VISUAL_SUBSCRIPTION_CMD not set/);
-  assert.equal(r.tier, 'api');
-});
-
-test('fillTemplate quotes the prompt and output path for the shell', () => {
-  const cmd = dv.fillTemplate('gen {prompt} > {out}', { prompt: "it's a loop", out: '/tmp/a b.gif' });
-  if (process.platform === 'win32') assert.equal(cmd, 'gen "it\'s a loop" > "/tmp/a b.gif"');
-  else assert.equal(cmd, "gen 'it'\\''s a loop' > '/tmp/a b.gif'");
+  await assert.rejects(
+    () => dv.auto({ frames: 'd', out, minWidth: 512, assembleImpl: fakeAssemble(3), fetchImpl: neverFetch }),
+    /\(width 4 < 512\); fix the frames, or pass --prompt/
+  );
+  const dry = await dv.auto({ frames: 'd', prompt: 'p', out, dryRun: true, assembleImpl: fakeAssemble(1), fetchImpl: neverFetch });
+  assert.equal(dry.request.model, 'gpt-image-2.6-flare');
+  assert.deepEqual(dry.attempts.map((a) => [a.tier, a.ok]), [['subscription', false], ['api', false]]);
 });
 
 test('assemble turns a frame sequence into a looping GIF', (t) => {
@@ -170,4 +188,10 @@ test('assemble turns a frame sequence into a looping GIF', (t) => {
   assert.equal(r.stats.width, 32);
   assert.equal(r.stats.loopSeconds, 0.6);
   assert.equal(dv.check(r.stats).ok, true);
+  // The CLI path a shift uses: own frames pass, so no key and no network are needed.
+  const cli = spawnSync(process.execPath, [SCRIPT, 'auto', '--frames', frames, '--out', path.join(dir, 'auto.gif'), '--prompt', 'unused'],
+    { encoding: 'utf8', env: { ...process.env, OPENAI_API_KEY: '' } });
+  assert.equal(cli.status, 0, cli.stderr);
+  assert.match(cli.stdout, /subscription: passed/);
+  assert.match(cli.stdout, /visual \| subscription \| own work \| 32x32 \| 3 frames/);
 });

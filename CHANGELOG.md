@@ -8,11 +8,14 @@ All notable changes to this project are documented here. Format loosely follows
 
 ### Added
 - `scripts/duty-visual.js` — maintainer tooling for growth-duty visuals, not
-  part of the npm package: `assemble` frames into a looping GIF, `inspect` a
-  GIF against the hard checks, `generate` with OpenAI gpt-image-2.6, and
-  `auto`, which runs the subscription route first and the paid API only when
-  that output fails the gate. Policy in `docs/growth/DUTY_MANUAL.md`;
-  11 tests, none touching the network.
+  part of the npm package: `assemble` the duty session's own frames into a
+  looping GIF, `inspect` a GIF against the hard checks, `generate` with OpenAI
+  gpt-image-2.6, and `auto`, which assembles your own frames first and calls
+  the paid API only when that GIF fails the gate (never without `--frames`,
+  never without `--prompt`, never with `--no-api`). Frames are resolved in
+  Node, so it works with Windows builds of ffmpeg and with ImageMagick 7's
+  `magick`. Policy in `docs/growth/DUTY_MANUAL.md`; 11 tests, none touching
+  the network.
 
 ### Fixed
 - Jev example wire test: decode the zstd-compressed request bodies that
