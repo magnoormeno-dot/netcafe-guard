@@ -14,6 +14,12 @@ All notable changes to this project are documented here. Format loosely follows
   that output fails the gate. Policy in `docs/growth/DUTY_MANUAL.md`;
   11 tests, none touching the network.
 
+### Fixed
+- Jev example wire test: decode the zstd-compressed request bodies that
+  `@typesafe-ai/sdk` 0.7.0 sends by default for payloads of 1 KiB or more, so
+  the `jev-example` CI job is green against the current SDK. The example
+  itself needed no change.
+
 ## [0.1.4] - 2026-09-20
 
 ### Added
