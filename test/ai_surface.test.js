@@ -2,6 +2,9 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const { scan } = require('../src');
 const {
   probeLeftoverCredentials,
@@ -127,6 +130,25 @@ test('leftover-credential watchlist covers cloud and dev CLI credential paths', 
       `expected watchlist to include ${rel}`
     );
   }
+});
+
+test('the leftover-credential probe reports the default PSReadLine console history', (t) => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ncg-psreadline-'));
+  t.after(() => fs.rmSync(home, { recursive: true, force: true }));
+  t.mock.method(os, 'homedir', () => home);
+
+  const facts = {};
+  probeLeftoverCredentials(facts);
+  assert.equal(facts.leftoverCredentialCount, 0);
+
+  const relativePath = 'AppData/Roaming/Microsoft/Windows/PowerShell/PSReadLine/ConsoleHost_history.txt';
+  const history = path.join(home, relativePath);
+  fs.mkdirSync(path.dirname(history), { recursive: true });
+  fs.writeFileSync(history, 'synthetic command');
+
+  probeLeftoverCredentials(facts);
+  assert.deepEqual(facts.leftoverCredentialFiles, ['~/' + relativePath]);
+  assert.equal(facts.leftoverCredentialCount, 1);
 });
 
 test('leftover-credential watchlist covers the Gemini CLI OAuth token', () => {

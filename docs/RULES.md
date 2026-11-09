@@ -92,6 +92,11 @@ for **existence** and never read the contents of a credential or config file —
 a scanner that slurped secrets would itself be the leak. Keep any new probe of
 this kind to the same standard.
 
+The credential watchlist includes the [default Windows PSReadLine console history](https://learn.microsoft.com/en-us/powershell/module/psreadline/set-psreadlineoption#-historysavepath)
+under `~/AppData/Roaming`, since commands can contain sensitive values. This
+check covers the standard profile path and does not look up custom history
+locations.
+
 ## Scriptable fixes
 
 `remediation` tells a person what to do. `fix` tells `scan --fix-script` how to

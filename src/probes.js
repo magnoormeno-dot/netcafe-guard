@@ -256,7 +256,8 @@ const LEFTOVER_CREDENTIAL_CANDIDATES = [
   '.codex/auth.json',
   '.gemini/oauth_creds.json',
   '.config/gh/hosts.yml',
-  '.config/openai'
+  '.config/openai',
+  'AppData/Roaming/Microsoft/Windows/PowerShell/PSReadLine/ConsoleHost_history.txt'
 ];
 
 /**
